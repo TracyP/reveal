@@ -6,7 +6,19 @@
   <style>
     body { font-family: sans-serif; text-align: center; background: #f0f0f0; }
     #game { margin-top: 50px; }
-    #word { font-size: 2em; letter-spacing: 0.5em; margin-bottom: 20px; }
+    #word { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; }
+    .tile {
+      width: 40px; height: 40px;
+      display: flex; align-items: center; justify-content: center;
+      background: #ddd;
+      font-size: 1.5em;
+      font-weight: bold;
+      border-radius: 5px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      text-transform: uppercase;
+    }
+    .tile.correct { background: #4caf50; color: white; }
+    .tile.hint { background: #aaa; color: white; }
     .keyboard { display: flex; flex-wrap: wrap; justify-content: center; max-width: 600px; margin: auto; }
     .key {
       width: 40px; height: 40px; margin: 5px; border: none;
@@ -27,41 +39,34 @@
     <div id="share" onclick="shareResult()"></div>
   </div>
   <script>
-    const words = [
-      "animal", "breeze", "custom", "dragon", "fossil", "glider", "hammer",
-      "ignite", "jungle", "kitten", "legend", "magnet", "nectar", "oracle",
-      "pirate", "quartz", "rocket", "sandal", "tunnel", "unfold", "vacuum",
-      "wander", "xylene", "yellow", "zephyr"
-    ]; // example words only - replace with obfuscated or hashed list for real use
-const epoch = new Date("2024-01-01T00:00:00Z");
-const now = new Date();
-const msPerDay = 1000 * 60 * 60 * 24;
-const dayIndex = Math.floor((now.getTime() - epoch.getTime()) / msPerDay);
-const word = words[dayIndex % words.length].toUpperCase();
-
-let display = Array(word.length).fill("_");
-let correctCount = 0;
-let hintCount = 0;
-const guessed = new Set();
-
-const startTime = Date.now();
-
-const wordDiv = document.getElementById("word");
-const keyboardDiv = document.getElementById("keyboard");
-const summaryDiv = document.getElementById("summary");
-const shareDiv = document.getElementById("share");
-
-function updateDisplay() {
-  wordDiv.innerText = display.join(" ");
+    const words = ["planet","dragon","customs","fossils","magenta","journey","kingdom"];
+    const epoch = new Date("2024-01-01T00:00:00Z");
+    const dayIndex = Math.floor((Date.now() - epoch.getTime()) / 86400000);
+    const word = words[dayIndex % words.length].toUpperCase();
+    let display = Array(word.length).fill({ char: "_", state: "" });
+    let correctCount = 0, hintCount = 0;
+    const guessed = new Set();
+    const startTime = Date.now();
+    const wordDiv = document.getElementById("word");
+    const keyboardDiv = document.getElementById("keyboard");
+    const summaryDiv = document.getElementById("summary");
+    const shareDiv = document.getElementById("share");function updateDisplay() {
+  wordDiv.innerHTML = "";
+  for (let tile of display) {
+    const span = document.createElement("div");
+    span.className = "tile" + (tile.state ? ` ${tile.state}` : "");
+    span.textContent = tile.char;
+    wordDiv.appendChild(span);
+  }
 }
 
 function revealHint() {
   for (let i = 0; i < word.length; i++) {
-    if (display[i] === "_") {
-      const letter = word[i];
+    if (display[i].char === "_") {
+      const ch = word[i];
       for (let j = 0; j < word.length; j++) {
-        if (word[j] === letter && display[j] === "_") {
-          display[j] = letter.toLowerCase(); // hint: lowercase/grey
+        if (word[j] === ch && display[j].char === "_") {
+          display[j] = { char: ch.toLowerCase(), state: "hint" };
           hintCount++;
         }
       }
@@ -76,8 +81,8 @@ function guess(letter, btn) {
 
   if (word.includes(letter)) {
     for (let i = 0; i < word.length; i++) {
-      if (word[i] === letter && display[i] === "_") {
-        display[i] = letter;
+      if (word[i] === letter && display[i].char === "_") {
+        display[i] = { char: letter, state: "correct" };
         correctCount++;
       }
     }
@@ -89,14 +94,12 @@ function guess(letter, btn) {
 
   updateDisplay();
 
-  if (!display.includes("_")) {
+  if (!display.some(d => d.char === "_")) {
     const duration = Math.floor((Date.now() - startTime) / 1000);
-    const minutes = Math.floor(duration / 60);
-    const seconds = duration % 60;
-    const timeStr = `${minutes}m${seconds.toString().padStart(2, "0")}s`;
-
-    summaryDiv.innerText = `You got ${correctCount} correct letters, ${hintCount} hints, in ${timeStr}.`;
-    shareDiv.innerText = `Copy: Reveal #${dayIndex} – ${correctCount} correct letters, ${hintCount} hints, ${timeStr}`;
+    const m = Math.floor(duration / 60), s = duration % 60;
+    const t = `${m}m${s.toString().padStart(2, '0')}s`;
+    summaryDiv.innerText = `You got ${correctCount} correct letters, ${hintCount} hints, in ${t}.`;
+    shareDiv.innerText = `Copy: Reveal #${dayIndex} – ${correctCount} correct letters, ${hintCount} hints, ${t}`;
   }
 }
 
@@ -105,11 +108,9 @@ function shareResult() {
   shareDiv.innerText = "Copied to clipboard!";
 }
 
-const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-for (let ch of letters) {
-  const btn = document.createElement("button");
-  btn.innerText = ch;
-  btn.classList.add("key");
+for (let ch of "ABCDEFGHIJKLMNOPQRSTUVWXYZ") {
+  let btn = document.createElement("button");
+  btn.innerText = ch; btn.className = "key";
   btn.onclick = () => guess(ch, btn);
   keyboardDiv.appendChild(btn);
 }
