@@ -17,16 +17,28 @@
       border-radius: 5px;
       box-shadow: 0 2px 5px rgba(0,0,0,0.2);
       text-transform: uppercase;
+      border: 2px solid transparent;
     }
     .tile.correct { background: #4caf50; color: white; }
-    .tile.hint { background: #aaa; color: white; }
-    .keyboard { display: flex; flex-wrap: wrap; justify-content: center; max-width: 600px; margin: auto; }
+    .tile.hint {
+      background: #aaa; color: white;
+      border: 2px solid #ffc107;
+      animation: flicker 0.5s ease-in-out 2;
+    }
+    @keyframes flicker {
+      0% { border-color: #ffc107; }
+      50% { border-color: #fff176; }
+      100% { border-color: #ffc107; }
+    }
+    .keyboard { display: flex; flex-direction: column; align-items: center; }
+    .keyrow { display: flex; justify-content: center; margin: 5px 0; }
     .key {
-      width: 40px; height: 40px; margin: 5px; border: none;
+      width: 40px; height: 40px; margin: 2px; border: none;
       background: #ddd; font-size: 1em; cursor: pointer; border-radius: 4px;
     }
     .key.correct { background: #4caf50; color: white; }
     .key.wrong { background: #f44336; color: white; }
+    .key.hintkey { background: #aaa; color: white; cursor: default; }
     #summary { margin-top: 30px; font-weight: bold; }
     #share { margin-top: 10px; cursor: pointer; color: #007BFF; text-decoration: underline; }
     #helpButton { margin-top: 20px; display: inline-block; padding: 10px 20px; background: #007BFF; color: white; border: none; border-radius: 4px; cursor: pointer; text-decoration: none; font-size: 1em; }
@@ -49,6 +61,7 @@
     let display = Array(word.length).fill({ char: "_", state: "" });
     let correctCount = 0, hintCount = 0;
     const guessed = new Set();
+    const keyButtons = {};
     const startTime = Date.now();
     const wordDiv = document.getElementById("word");
     const keyboardDiv = document.getElementById("keyboard");
@@ -111,7 +124,13 @@
               revealed = true;
             }
           }
-          if (revealed) break;
+          if (revealed) {
+            if (keyButtons[ch]) {
+              keyButtons[ch].classList.add("hintkey");
+              keyButtons[ch].disabled = true;
+            }
+            break;
+          }
         }
       }
 
@@ -156,12 +175,24 @@
         shareDiv.innerText = "Copied to clipboard!";
       }
 
-      for (let ch of "ABCDEFGHIJKLMNOPQRSTUVWXYZ") {
-        let btn = document.createElement("button");
-        btn.innerText = ch; btn.className = "key";
-        btn.onclick = () => guess(ch, btn);
-        keyboardDiv.appendChild(btn);
-      }
+      const layout = [
+        "QWERTYUIOP".split(""),
+        "ASDFGHJKL".split(""),
+        "ZXCVBNM".split("")
+      ];
+
+      layout.forEach(row => {
+        const rowDiv = document.createElement("div");
+        rowDiv.className = "keyrow";
+        row.forEach(ch => {
+          let btn = document.createElement("button");
+          btn.innerText = ch; btn.className = "key";
+          btn.onclick = () => guess(ch, btn);
+          rowDiv.appendChild(btn);
+          keyButtons[ch] = btn;
+        });
+        keyboardDiv.appendChild(rowDiv);
+      });
 
       updateDisplay();
     }
