@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en">
+<!DOCTYPE html>
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -28,6 +29,7 @@
     .key.wrong { background: #f44336; color: white; }
     #summary { margin-top: 30px; font-weight: bold; }
     #share { margin-top: 10px; cursor: pointer; color: #007BFF; text-decoration: underline; }
+    #helpLink { margin-top: 20px; display: block; color: #007BFF; text-decoration: underline; cursor: pointer; }
   </style>
 </head>
 <body>
@@ -37,6 +39,7 @@
     <div class="keyboard" id="keyboard"></div>
     <div id="summary"></div>
     <div id="share" onclick="shareResult()"></div>
+    <a id="helpLink" href="help.html">How to play</a>
   </div>
   <script>
     const words = ["planet","dragon","customs","fossils","magenta","journey","kingdom"];
@@ -50,73 +53,92 @@
     const wordDiv = document.getElementById("word");
     const keyboardDiv = document.getElementById("keyboard");
     const summaryDiv = document.getElementById("summary");
-    const shareDiv = document.getElementById("share");function updateDisplay() {
-  wordDiv.innerHTML = "";
-  for (let tile of display) {
-    const span = document.createElement("div");
-    span.className = "tile" + (tile.state ? ` ${tile.state}` : "");
-    span.textContent = tile.char;
-    wordDiv.appendChild(span);
-  }
-}
+    const shareDiv = document.getElementById("share");
+    const saveKey = `reveal-${dayIndex}`;
 
-function revealHint() {
-  for (let i = 0; i < word.length; i++) {
-    if (display[i].char === "_") {
-      const ch = word[i];
-      for (let j = 0; j < word.length; j++) {
-        if (word[j] === ch && display[j].char === "_") {
-          display[j] = { char: ch.toLowerCase(), state: "hint" };
-          hintCount++;
+    const saved = localStorage.getItem(saveKey);
+    if (saved) {
+      const result = JSON.parse(saved);
+      summaryDiv.innerText = result.summary;
+      shareDiv.innerText = result.shareText;
+      wordDiv.innerHTML = result.finalDisplayHTML;
+      keyboardDiv.style.display = "none";
+    } else {
+      function updateDisplay() {
+        wordDiv.innerHTML = "";
+        for (let tile of display) {
+          const span = document.createElement("div");
+          span.className = "tile" + (tile.state ? ` ${tile.state}` : "");
+          span.textContent = tile.char;
+          wordDiv.appendChild(span);
         }
       }
-      break;
-    }
-  }
-}
 
-function guess(letter, btn) {
-  if (guessed.has(letter)) return;
-  guessed.add(letter);
-
-  if (word.includes(letter)) {
-    for (let i = 0; i < word.length; i++) {
-      if (word[i] === letter && display[i].char === "_") {
-        display[i] = { char: letter, state: "correct" };
-        correctCount++;
+      function revealHint() {
+        for (let i = 0; i < word.length; i++) {
+          if (display[i].char === "_") {
+            const ch = word[i];
+            for (let j = 0; j < word.length; j++) {
+              if (word[j] === ch && display[j].char === "_") {
+                display[j] = { char: ch.toLowerCase(), state: "hint" };
+                hintCount++;
+              }
+            }
+            break;
+          }
+        }
       }
+
+      function guess(letter, btn) {
+        if (guessed.has(letter)) return;
+        guessed.add(letter);
+
+        if (word.includes(letter)) {
+          for (let i = 0; i < word.length; i++) {
+            if (word[i] === letter && display[i].char === "_") {
+              display[i] = { char: letter, state: "correct" };
+              correctCount++;
+            }
+          }
+          btn.classList.add("correct");
+        } else {
+          btn.classList.add("wrong");
+          revealHint();
+        }
+
+        updateDisplay();
+
+        if (!display.some(d => d.char === "_")) {
+          const duration = Math.floor((Date.now() - startTime) / 1000);
+          const m = Math.floor(duration / 60), s = duration % 60;
+          const t = `${m}m${s.toString().padStart(2, '0')}s`;
+          const summary = `You got ${correctCount} correct letters, ${hintCount} hints, in ${t}.`;
+          const shareText = `Copy: Reveal #${dayIndex} – ${correctCount} correct letters, ${hintCount} hints, ${t}`;
+          const finalDisplayHTML = wordDiv.innerHTML;
+
+          summaryDiv.innerText = summary;
+          shareDiv.innerText = shareText;
+
+          localStorage.setItem(saveKey, JSON.stringify({
+            summary, shareText, finalDisplayHTML
+          }));
+        }
+      }
+
+      function shareResult() {
+        navigator.clipboard.writeText(shareDiv.innerText.replace("Copy: ", ""));
+        shareDiv.innerText = "Copied to clipboard!";
+      }
+
+      for (let ch of "ABCDEFGHIJKLMNOPQRSTUVWXYZ") {
+        let btn = document.createElement("button");
+        btn.innerText = ch; btn.className = "key";
+        btn.onclick = () => guess(ch, btn);
+        keyboardDiv.appendChild(btn);
+      }
+
+      updateDisplay();
     }
-    btn.classList.add("correct");
-  } else {
-    btn.classList.add("wrong");
-    revealHint();
-  }
-
-  updateDisplay();
-
-  if (!display.some(d => d.char === "_")) {
-    const duration = Math.floor((Date.now() - startTime) / 1000);
-    const m = Math.floor(duration / 60), s = duration % 60;
-    const t = `${m}m${s.toString().padStart(2, '0')}s`;
-    summaryDiv.innerText = `You got ${correctCount} correct letters, ${hintCount} hints, in ${t}.`;
-    shareDiv.innerText = `Copy: Reveal #${dayIndex} – ${correctCount} correct letters, ${hintCount} hints, ${t}`;
-  }
-}
-
-function shareResult() {
-  navigator.clipboard.writeText(shareDiv.innerText.replace("Copy: ", ""));
-  shareDiv.innerText = "Copied to clipboard!";
-}
-
-for (let ch of "ABCDEFGHIJKLMNOPQRSTUVWXYZ") {
-  let btn = document.createElement("button");
-  btn.innerText = ch; btn.className = "key";
-  btn.onclick = () => guess(ch, btn);
-  keyboardDiv.appendChild(btn);
-}
-
-updateDisplay();
-
   </script>
 </body>
 </html>
