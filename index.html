@@ -1,0 +1,120 @@
+<!DOCTYPE html><html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reveal</title>
+  <style>
+    body { font-family: sans-serif; text-align: center; background: #f0f0f0; }
+    #game { margin-top: 50px; }
+    #word { font-size: 2em; letter-spacing: 0.5em; margin-bottom: 20px; }
+    .keyboard { display: flex; flex-wrap: wrap; justify-content: center; max-width: 600px; margin: auto; }
+    .key {
+      width: 40px; height: 40px; margin: 5px; border: none;
+      background: #ddd; font-size: 1em; cursor: pointer; border-radius: 4px;
+    }
+    .key.correct { background: #4caf50; color: white; }
+    .key.wrong { background: #f44336; color: white; }
+    #summary { margin-top: 30px; font-weight: bold; }
+    #share { margin-top: 10px; cursor: pointer; color: #007BFF; text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <h1>Reveal</h1>
+  <div id="game">
+    <div id="word"></div>
+    <div class="keyboard" id="keyboard"></div>
+    <div id="summary"></div>
+    <div id="share" onclick="shareResult()"></div>
+  </div>
+  <script>
+    const words = [
+      "animal", "breeze", "custom", "dragon", "fossil", "glider", "hammer",
+      "ignite", "jungle", "kitten", "legend", "magnet", "nectar", "oracle",
+      "pirate", "quartz", "rocket", "sandal", "tunnel", "unfold", "vacuum",
+      "wander", "xylene", "yellow", "zephyr"
+    ]; // example words only - replace with obfuscated or hashed list for real useconst epoch = new Date("2024-01-01T00:00:00Z");
+const now = new Date();
+const msPerDay = 1000 * 60 * 60 * 24;
+const dayIndex = Math.floor((now.getTime() - epoch.getTime()) / msPerDay);
+const word = words[dayIndex % words.length].toUpperCase();
+
+let display = Array(word.length).fill("_");
+let correctCount = 0;
+let hintCount = 0;
+const guessed = new Set();
+
+const startTime = Date.now();
+
+const wordDiv = document.getElementById("word");
+const keyboardDiv = document.getElementById("keyboard");
+const summaryDiv = document.getElementById("summary");
+const shareDiv = document.getElementById("share");
+
+function updateDisplay() {
+  wordDiv.innerText = display.join(" ");
+}
+
+function revealHint() {
+  for (let i = 0; i < word.length; i++) {
+    if (display[i] === "_") {
+      const letter = word[i];
+      for (let j = 0; j < word.length; j++) {
+        if (word[j] === letter && display[j] === "_") {
+          display[j] = letter.toLowerCase(); // hint: lowercase/grey
+          hintCount++;
+        }
+      }
+      break;
+    }
+  }
+}
+
+function guess(letter, btn) {
+  if (guessed.has(letter)) return;
+  guessed.add(letter);
+
+  if (word.includes(letter)) {
+    for (let i = 0; i < word.length; i++) {
+      if (word[i] === letter && display[i] === "_") {
+        display[i] = letter;
+        correctCount++;
+      }
+    }
+    btn.classList.add("correct");
+  } else {
+    btn.classList.add("wrong");
+    revealHint();
+  }
+
+  updateDisplay();
+
+  if (!display.includes("_")) {
+    const duration = Math.floor((Date.now() - startTime) / 1000);
+    const minutes = Math.floor(duration / 60);
+    const seconds = duration % 60;
+    const timeStr = `${minutes}m${seconds.toString().padStart(2, "0")}s`;
+
+    summaryDiv.innerText = `You got ${correctCount} correct letters, ${hintCount} hints, in ${timeStr}.`;
+    shareDiv.innerText = `Copy: Reveal #${dayIndex} – ${correctCount} correct letters, ${hintCount} hints, ${timeStr}`;
+  }
+}
+
+function shareResult() {
+  navigator.clipboard.writeText(shareDiv.innerText.replace("Copy: ", ""));
+  shareDiv.innerText = "Copied to clipboard!";
+}
+
+const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+for (let ch of letters) {
+  const btn = document.createElement("button");
+  btn.innerText = ch;
+  btn.classList.add("key");
+  btn.onclick = () => guess(ch, btn);
+  keyboardDiv.appendChild(btn);
+}
+
+updateDisplay();
+
+  </script>
+</body>
+</html>
