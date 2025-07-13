@@ -29,7 +29,7 @@
     .key.wrong { background: #f44336; color: white; }
     #summary { margin-top: 30px; font-weight: bold; }
     #share { margin-top: 10px; cursor: pointer; color: #007BFF; text-decoration: underline; }
-    #helpLink { margin-top: 20px; display: block; color: #007BFF; text-decoration: underline; cursor: pointer; }
+    #helpButton { margin-top: 20px; display: inline-block; padding: 10px 20px; background: #007BFF; color: white; border: none; border-radius: 4px; cursor: pointer; text-decoration: none; font-size: 1em; }
   </style>
 </head>
 <body>
@@ -39,7 +39,7 @@
     <div class="keyboard" id="keyboard"></div>
     <div id="summary"></div>
     <div id="share" onclick="shareResult()"></div>
-    <a id="helpLink" href="help.html">How to play</a>
+    <button id="helpButton" onclick="location.href='help.html'">How to Play</button>
   </div>
   <script>
     const words = ["planet","dragon","customs","fossils","magenta","journey","kingdom"];
@@ -55,6 +55,32 @@
     const summaryDiv = document.getElementById("summary");
     const shareDiv = document.getElementById("share");
     const saveKey = `reveal-${dayIndex}`;
+
+    function mulberry32(a) {
+      return function() {
+        let t = a += 0x6D2B79F5;
+        t = Math.imul(t ^ t >>> 15, t | 1);
+        t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+        return ((t ^ t >>> 14) >>> 0) / 4294967296;
+      }
+    }
+
+    function getHintOrder(word, seed) {
+      const seen = new Set();
+      const letters = [...word].filter(ch => {
+        if (seen.has(ch)) return false;
+        seen.add(ch);
+        return true;
+      });
+      const rand = mulberry32(seed);
+      for (let i = letters.length - 1; i > 0; i--) {
+        const j = Math.floor(rand() * (i + 1));
+        [letters[i], letters[j]] = [letters[j], letters[i]];
+      }
+      return letters;
+    }
+
+    const hintQueue = getHintOrder(word, dayIndex);
 
     const saved = localStorage.getItem(saveKey);
     if (saved) {
@@ -75,17 +101,17 @@
       }
 
       function revealHint() {
-        for (let i = 0; i < word.length; i++) {
-          if (display[i].char === "_") {
-            const ch = word[i];
-            for (let j = 0; j < word.length; j++) {
-              if (word[j] === ch && display[j].char === "_") {
-                display[j] = { char: ch.toLowerCase(), state: "hint" };
-                hintCount++;
-              }
+        while (hintQueue.length > 0) {
+          const ch = hintQueue.shift();
+          let revealed = false;
+          for (let j = 0; j < word.length; j++) {
+            if (word[j] === ch && display[j].char === "_") {
+              display[j] = { char: ch.toLowerCase(), state: "hint" };
+              hintCount++;
+              revealed = true;
             }
-            break;
           }
+          if (revealed) break;
         }
       }
 
