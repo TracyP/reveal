@@ -1,4 +1,3 @@
-let encryptedWords = window.encryptedWords || [];
 const passphrase = "base64";
 const maxHints = 3;
 const maxGuesses = 6;
