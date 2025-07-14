@@ -129,8 +129,8 @@
       keyboardDiv.style.display = "none";
     } else {
       function updateDisplay(highlightIndexes = []) {
-        // Clear old flickers and recreate tiles to reset all borders
-        wordDiv.querySelectorAll(".tile").forEach(tile => tile.remove());
+        // Clear old flickers by removing class from tiles before rebuild
+        document.querySelectorAll(".tile").forEach(tile => tile.classList.remove("flicker"));
         wordDiv.innerHTML = "";
         for (let i = 0; i < display.length; i++) {
           const tile = display[i];
