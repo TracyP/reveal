@@ -2,57 +2,36 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Reveal</title>
   <style>
     body {
       font-family: sans-serif;
       text-align: center;
-      background: #e3f2fd; /* pastel blue for accessibility */
+      background: #eef4f7;
       overflow-x: hidden;
-      margin: 0; padding: 0;
     }
-    #game {
-      margin-top: 50px;
-      user-select: none;
-    }
+    #game { margin-top: 50px; }
     #wordWrapper {
       display: inline-block;
       padding: 15px;
       border: 3px solid transparent;
       border-radius: 10px;
       margin-bottom: 20px;
-      min-width: 300px;
     }
     #wordWrapper.complete {
       animation: pulse-border 1s ease-out;
       border-color: #4caf50;
     }
-    #wordWrapper.fail {
-      border-color: #f44336;
-    }
     @keyframes pulse-border {
-      0% {
-        box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7);
-      }
-      50% {
-        box-shadow: 0 0 15px 5px rgba(76, 175, 80, 0.4);
-      }
-      100% {
-        box-shadow: 0 0 0 0 rgba(76, 175, 80, 0);
-      }
+      0% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7); }
+      50% { box-shadow: 0 0 15px 5px rgba(76, 175, 80, 0.4); }
+      100% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
     }
-    #word {
-      display: flex;
-      justify-content: center;
-      gap: 10px;
-    }
+    #word { display: flex; justify-content: center; gap: 10px; }
     .tile {
-      width: 40px;
-      height: 40px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      width: 40px; height: 40px;
+      display: flex; align-items: center; justify-content: center;
       background: #ddd;
       font-size: 1.5em;
       font-weight: bold;
@@ -60,69 +39,21 @@
       box-shadow: 0 2px 5px rgba(0,0,0,0.2);
       text-transform: uppercase;
       border: none;
-      user-select: none;
     }
-    .tile.correct {
-      background: #4caf50;
-      color: white;
-    }
-    .tile.hint {
-      background: #aaa;
-      color: white;
-    }
-    .keyboard {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      margin-top: 15px;
-    }
-    .keyrow {
-      display: flex;
-      justify-content: center;
-      margin: 5px 0;
-    }
+    .tile.correct { background: #4caf50; color: white; }
+    .tile.hint { background: #aaa; color: white; }
+    .keyboard { display: flex; flex-direction: column; align-items: center; }
+    .keyrow { display: flex; justify-content: center; margin: 5px 0; }
     .key {
-      width: 40px;
-      height: 40px;
-      margin: 2px;
-      border: none;
-      background: #ddd;
-      font-size: 1em;
-      cursor: pointer;
-      border-radius: 4px;
-      user-select: none;
-      text-transform: uppercase;
+      width: 40px; height: 40px; margin: 2px; border: none;
+      background: #ddd; font-size: 1em; cursor: pointer; border-radius: 4px;
     }
-    .key.correct {
-      background: #4caf50;
-      color: white;
-    }
-    .key.wrong {
-      background: #f44336;
-      color: white;
-    }
-    .key.hintkey {
-      background: #aaa;
-      color: white;
-      cursor: default;
-    }
-    .key.disabled {
-      cursor: not-allowed;
-      opacity: 0.6;
-    }
-    #summary {
-      margin-top: 30px;
-      font-weight: bold;
-      white-space: pre-line;
-      min-height: 70px;
-    }
-    #share {
-      margin-top: 10px;
-      cursor: pointer;
-      color: #007BFF;
-      text-decoration: underline;
-      user-select: none;
-    }
+    .key.correct { background: #4caf50; color: white; }
+    .key.wrong { background: #f44336; color: white; }
+    .key.hintkey { background: #aaa; color: white; cursor: default; }
+    .key.disabled { cursor: not-allowed; opacity: 0.6; }
+    #summary { margin-top: 30px; font-weight: bold; white-space: pre-line; }
+    #share { margin-top: 10px; cursor: pointer; color: #007BFF; text-decoration: underline; }
     #helpButton {
       margin-top: 20px;
       display: inline-block;
@@ -134,38 +65,39 @@
       cursor: pointer;
       text-decoration: none;
       font-size: 1em;
-      user-select: none;
-    }
-    #modeIndicator {
-      margin-top: 10px;
-      font-weight: bold;
-      color: #333;
-    }
-    #hintsIndicator {
-      margin: 15px auto;
-      font-size: 1.5em;
-      user-select: none;
-    }
-    #hintsIndicator .person {
-      margin: 0 5px;
-      display: inline-block;
-      color: #4caf50;
-      transition: color 0.3s ease;
-    }
-    #hintsIndicator .person.used {
-      color: #f44336;
     }
     #confetti-canvas {
       position: fixed;
       pointer-events: none;
-      top: 0; left: 0;
+      top: 0;
+      left: 0;
       width: 100%;
       height: 100%;
       z-index: 9999;
     }
+    #hintsLeft {
+      display: flex;
+      justify-content: center;
+      background: #fff;
+      border-radius: 999px;
+      padding: 6px 12px;
+      gap: 8px;
+      box-shadow: inset 0 0 2px #ccc;
+      margin-bottom: 15px;
+    }
+    .hint-led {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: green;
+    }
+    .hint-led.used {
+      background: red;
+    }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
   <script src="encryptedWords.js"></script>
+  <script src="game.js"></script>
 </head>
 <body>
   <h1>Reveal</h1>
@@ -173,373 +105,11 @@
   <div id="game">
     <canvas id="confetti-canvas"></canvas>
     <div id="wordWrapper"><div id="word"></div></div>
-    <div id="hintsIndicator"></div>
+    <div id="hintsLeft"></div>
     <div class="keyboard" id="keyboard"></div>
     <div id="summary"></div>
-    <div id="share" onclick="shareResult()" title="Share your result"></div>
+    <div id="share" onclick="shareResult()"></div>
     <button id="helpButton" onclick="location.href='help.html'">How to Play</button>
   </div>
-
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
-  <script>
-    const now = new Date();
-    const testingMode = true;
-    const secondsPerPuzzle = testingMode ? 60 : 86400;
-    const anchorTime = testingMode
-      ? new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours(), 0, 0)
-      : new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const puzzleIndex = Math.floor((Date.now() - anchorTime.getTime()) / (secondsPerPuzzle * 1000));
-
-    const storageKey = "revealGameState";
-
-    document.getElementById("modeIndicator").textContent = testingMode
-      ? "🧪 Testing Mode (1-minute puzzles)"
-      : "🧩 Daily Puzzle Mode";
-
-    // Configurable hint limit
-    const maxHints = 3;
-
-    // QWERTY keyboard layout
-    const qwertyRows = [
-      ["q","w","e","r","t","y","u","i","o","p"],
-      ["a","s","d","f","g","h","j","k","l"],
-      ["z","x","c","v","b","n","m"]
-    ];
-
-    let wordsList = [];
-    let decryptedWord = "";
-    let guessed = new Set();
-    let revealedHints = new Set();
-    let hintsUsed = 0;
-    let stats = { correctLetters: 0, hintsUsed: 0, duration: 0, status: "" };
-    let gameOver = false;
-    let startTime = null;
-
-    const wordWrapper = document.getElementById("wordWrapper");
-    const wordDiv = document.getElementById("word");
-    const keyboardDiv = document.getElementById("keyboard");
-    const summaryDiv = document.getElementById("summary");
-    const shareDiv = document.getElementById("share");
-    const hintsIndicatorDiv = document.getElementById("hintsIndicator");
-
-    // --- Utility to decrypt words using CryptoJS with index based passphrase ---
-    function decryptWord(encrypted, index) {
-      const passphrase = "base64" + index; // no hyphen, just concatenated
-      try {
-        const bytes = CryptoJS.AES.decrypt(encrypted, passphrase);
-        const decrypted = bytes.toString(CryptoJS.enc.Utf8);
-        if (!decrypted) throw new Error("Decryption failed or empty string");
-        return decrypted.toLowerCase();
-      } catch(e) {
-        console.error("Failed to decrypt:", e);
-        return "";
-      }
-    }
-
-    // Load & decrypt all words
-    function loadWords() {
-      wordsList = encryptedWords.map((enc, i) => decryptWord(enc, i)).filter(Boolean);
-    }
-
-    // Prepare the current puzzle word from wordsList and puzzleIndex
-    function getPuzzleWord(index) {
-      if (!wordsList.length) return "";
-      if(index < wordsList.length) {
-        return wordsList[index];
-      }
-      // For indices beyond wordsList, wrap around using modulo
-      return wordsList[index % wordsList.length];
-    }
-
-    function initGame() {
-      loadWords();
-      decryptedWord = getPuzzleWord(puzzleIndex);
-
-      loadProgress();
-
-      if (!startTime) startTime = Date.now();
-
-      renderWord();
-      renderKeyboard();
-      updateHintsIndicator();
-      updateSummary();
-
-      if(gameOver) {
-        disableAllKeys(true);
-      }
-    }
-
-    function renderWord() {
-      wordDiv.innerHTML = "";
-      for(let i=0; i<decryptedWord.length; i++) {
-        const letter = decryptedWord[i];
-        const tile = document.createElement("div");
-        tile.className = "tile";
-        tile.textContent = (guessed.has(letter) || revealedHints.has(i)) ? letter.toUpperCase() : "";
-        if(guessed.has(letter)) {
-          tile.classList.add("correct");
-        } else if(revealedHints.has(i)) {
-          tile.classList.add("hint");
-        }
-        wordDiv.appendChild(tile);
-      }
-    }
-
-    function renderKeyboard() {
-      keyboardDiv.innerHTML = "";
-      for(const row of qwertyRows) {
-        const rowDiv = document.createElement("div");
-        rowDiv.className = "keyrow";
-        for(const letter of row) {
-          const keyBtn = document.createElement("button");
-          keyBtn.className = "key";
-          keyBtn.textContent = letter.toUpperCase();
-          keyBtn.dataset.letter = letter;
-
-          if(guessed.has(letter)) {
-            keyBtn.classList.add("correct");
-            keyBtn.disabled = true;
-          } else if([...revealedHints].some(idx => decryptedWord[idx] === letter)) {
-            keyBtn.classList.add("hintkey");
-            keyBtn.disabled = true;
-          }
-
-          if(gameOver) {
-            keyBtn.disabled = true;
-            keyBtn.classList.add("disabled");
-          }
-
-          keyBtn.onclick = () => onKeyClick(letter);
-
-          rowDiv.appendChild(keyBtn);
-        }
-        keyboardDiv.appendChild(rowDiv);
-      }
-    }
-
-    // Update hints indicator display
-    function updateHintsIndicator() {
-      hintsIndicatorDiv.innerHTML = "";
-      for(let i=0; i<maxHints; i++) {
-        const span = document.createElement("span");
-        span.className = "person";
-        span.textContent = "🚶"; // pedestrian emoji
-        if(i < hintsUsed) span.classList.add("used");
-        hintsIndicatorDiv.appendChild(span);
-      }
-    }
-
-    function onKeyClick(letter) {
-      if(gameOver) return;
-
-      if(guessed.has(letter) || [...revealedHints].some(i => decryptedWord[i] === letter)) return;
-
-      const indices = [];
-      for(let i=0; i<decryptedWord.length; i++) {
-        if(decryptedWord[i] === letter) indices.push(i);
-      }
-
-      if(indices.length) {
-        // Correct guess
-        guessed.add(letter);
-        stats.correctLetters += indices.length;
-      } else {
-        // Wrong guess - check hints
-        if(hintsUsed < maxHints) {
-          hintsUsed++;
-          stats.hintsUsed = hintsUsed;
-          // Reveal next hint letter(s) in predetermined order
-          giveHint();
-        } else {
-          // No more hints left - fail game
-          stats.status = "fail";
-          endGame(false);
-          return;
-        }
-      }
-
-      guessed.add(letter);
-      saveProgress();
-      renderWord();
-      renderKeyboard();
-      updateHintsIndicator();
-      updateSummary();
-      checkCompletion();
-    }
-
-    // Predetermined hint order: reveal the first unrevealed letter(s) in word order
-    function giveHint() {
-      for(let i=0; i<decryptedWord.length; i++) {
-        if(!revealedHints.has(i) && !guessed.has(decryptedWord[i])) {
-          revealedHints.add(i);
-          // Disable the hint letter key
-          saveProgress();
-          renderWord();
-          renderKeyboard();
-          updateHintsIndicator();
-          return;
-        }
-      }
-    }
-
-    // Check if puzzle solved
-    function checkCompletion() {
-      // All letters guessed or revealed via hints
-      const allRevealed = [...decryptedWord].every((letter, idx) => guessed.has(letter) || revealedHints.has(idx));
-      if(allRevealed) {
-        stats.status = "solved";
-        endGame(true);
-      }
-    }
-
-    function endGame(success) {
-      gameOver = true;
-      stats.duration = Math.floor((Date.now() - startTime) / 1000);
-      if(success) {
-        wordWrapper.classList.add("complete");
-        confetti();
-      } else {
-        wordWrapper.classList.add("fail");
-        failEffect();
-      }
-      disableAllKeys(true);
-      updateSummary();
-      saveProgress();
-    }
-
-    // Confetti for success
-    function confetti() {
-      const duration = 3 * 1000;
-      const end = Date.now() + duration;
-
-      (function frame() {
-        confettiLib({
-          particleCount: 5,
-          angle: 60,
-          spread: 55,
-          origin: { x: 0 },
-          colors: ['#4caf50', '#81c784', '#a5d6a7']
-        });
-        confettiLib({
-          particleCount: 5,
-          angle: 120,
-          spread: 55,
-          origin: { x: 1 },
-          colors: ['#4caf50', '#81c784', '#a5d6a7']
-        });
-
-        if (Date.now() < end) {
-          requestAnimationFrame(frame);
-        }
-      })();
-    }
-
-    // Fail effect (shake red background flash)
-    function failEffect() {
-      const origBg = wordWrapper.style.backgroundColor;
-      let flashes = 0;
-      const maxFlashes = 6;
-
-      function flash() {
-        wordWrapper.style.backgroundColor = (flashes % 2 === 0) ? "#f8d7da" : origBg;
-        flashes++;
-        if(flashes <= maxFlashes) {
-          setTimeout(flash, 200);
-        } else {
-          wordWrapper.style.backgroundColor = origBg;
-        }
-      }
-      flash();
-    }
-
-    function disableAllKeys(disable = true) {
-      document.querySelectorAll(".key").forEach(k => {
-        k.disabled = disable;
-        if(disable) k.classList.add("disabled");
-        else k.classList.remove("disabled");
-      });
-    }
-
-    function updateSummary() {
-      if(!gameOver) {
-        summaryDiv.textContent = `Correct letters guessed: ${stats.correctLetters}\nHints used: ${stats.hintsUsed}`;
-      } else {
-        const statusText = stats.status === "solved" ? "Solved! 🎉" : "Failed! ❌";
-        summaryDiv.textContent = `${statusText}\nCorrect letters guessed: ${stats.correctLetters}\nHints used: ${stats.hintsUsed}\nDuration: ${stats.duration}s\nPuzzle #${puzzleIndex}`;
-      }
-    }
-
-    function shareResult() {
-      if(!gameOver) return alert("Finish the puzzle to share your result.");
-      const statusText = stats.status === "solved" ? "Solved" : "Failed";
-      const shareText = `Reveal Puzzle #${puzzleIndex} — ${statusText}\nCorrect letters: ${stats.correctLetters}\nHints used: ${stats.hintsUsed}\nDuration: ${stats.duration}s\nPlay at: ${window.location.origin}${window.location.pathname}`;
-      if(navigator.share) {
-        navigator.share({ text: shareText }).catch(() => alert("Sharing failed or cancelled."));
-      } else {
-        navigator.clipboard.writeText(shareText).then(() => alert("Result copied to clipboard!"));
-      }
-    }
-
-    function saveProgress() {
-      const data = {
-        puzzleIndex,
-        guessed: Array.from(guessed),
-        revealedHints: Array.from(revealedHints),
-        hintsUsed,
-        stats,
-        status: stats.status || ""
-      };
-      localStorage.setItem(storageKey, JSON.stringify(data));
-    }
-
-    function loadProgress() {
-      const storedRaw = localStorage.getItem(storageKey);
-      if (!storedRaw) return resetGameState();
-
-      let storedData;
-      try {
-        storedData = JSON.parse(storedRaw);
-      } catch {
-        return resetGameState();
-      }
-
-      // Validate saved state belongs to current puzzle index
-      if (!storedData.status || storedData.puzzleIndex !== puzzleIndex) {
-        return resetGameState();
-      }
-
-      guessed = new Set(storedData.guessed || []);
-      revealedHints = new Set(storedData.revealedHints || []);
-      hintsUsed = storedData.hintsUsed || 0;
-      stats = storedData.stats || { correctLetters: 0, hintsUsed: 0, duration: 0, status: "" };
-      gameOver = storedData.status === "solved" || storedData.status === "fail";
-
-      if (gameOver) {
-        if (stats.status === "solved") wordWrapper.classList.add("complete");
-        if (stats.status === "fail") wordWrapper.classList.add("fail");
-        disableAllKeys(true);
-      }
-      updateHintsIndicator();
-    }
-
-    function resetGameState() {
-      guessed = new Set();
-      revealedHints = new Set();
-      hintsUsed = 0;
-      gameOver = false;
-      stats = { correctLetters: 0, hintsUsed: 0, duration: 0, status: "" };
-      wordWrapper.classList.remove("complete", "fail");
-      updateHintsIndicator();
-      renderWord();
-      renderKeyboard();
-      updateSummary();
-      disableAllKeys(false);
-    }
-
-    // Initialize on load
-    window.onload = () => {
-      initGame();
-    };
-  </script>
 </body>
 </html>
