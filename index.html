@@ -69,7 +69,8 @@
   <script>
     const now = new Date();
     const localMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const secondsPerPuzzle = 86400; // 24h
+    // const secondsPerPuzzle = 86400; // 24h
+    const secondsPerPuzzle = 60; // 1m
     const puzzleIndex = Math.floor((Date.now() - localMidnight.getTime()) / (secondsPerPuzzle * 1000));
 
     function pseudoRandomModIndex(index, max) {
