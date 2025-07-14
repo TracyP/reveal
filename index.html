@@ -185,27 +185,35 @@
         }
 
         if (!display.some(d => d.char === "_")) {
-          Object.values(keyButtons).forEach(btn => btn.disabled = true);
   Object.values(keyButtons).forEach(btn => btn.disabled = true);
-          const summary = `You got ${correctCount} correct letters, ${hintCount} hints, in ${t}.`;
-          const shareText = `Copy: Reveal #${dayIndex} – ${correctCount} correct letters, ${hintCount} hints, ${t}
+  const duration = Math.floor((Date.now() - startTime) / 1000);
+  const m = Math.floor(duration / 60), s = duration % 60;
+  const t = `${m}m${s.toString().padStart(2, '0')}s`;
+  const summary = `You got ${correctCount} correct letters, ${hintCount} hints, in ${t}.`;
+  const shareText = `Copy: Reveal #${dayIndex} – ${correctCount} correct letters, ${hintCount} hints, ${t}
 Play at: https://tracyp.github.io/reveal/`;
-          const finalDisplayHTML = wordDiv.innerHTML;
+  const finalDisplayHTML = wordDiv.innerHTML;
 
-          summaryDiv.innerText = summary + `
+  summaryDiv.innerText = summary + `
 Current streak: `;
-          shareDiv.innerText = shareText;
-          wordWrapper.classList.add("complete");
-          confetti({ spread: 180, particleCount: 150, origin: { y: 0.4 } });
+  shareDiv.innerText = shareText;
+  wordWrapper.classList.add("complete");
+  confetti({ spread: 180, particleCount: 150, origin: { y: 0.4 } });
 
-          let lastPlayed = parseInt(localStorage.getItem(streakKey + "-last")) || -1;
-          let currentStreak = parseInt(localStorage.getItem(streakKey)) || 0;
-          if (lastPlayed === dayIndex - 1) currentStreak++;
-          else currentStreak = 1;
-          localStorage.setItem(streakKey, currentStreak);
-          localStorage.setItem(streakKey + "-last", dayIndex);
+  let lastPlayed = parseInt(localStorage.getItem(streakKey + "-last")) || -1;
+  let currentStreak = parseInt(localStorage.getItem(streakKey)) || 0;
+  if (lastPlayed === dayIndex - 1) currentStreak++;
+  else currentStreak = 1;
+  localStorage.setItem(streakKey, currentStreak);
+  localStorage.setItem(streakKey + "-last", dayIndex);
 
-          summaryDiv.innerText += currentStreak;
+  summaryDiv.innerText += currentStreak;
+
+  localStorage.setItem(saveKey, JSON.stringify({
+    summary: summaryDiv.innerText,
+    shareText,
+    finalDisplayHTML
+  }));
 
           localStorage.setItem(saveKey, JSON.stringify({
             summary: summaryDiv.innerText,
