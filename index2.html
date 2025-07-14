@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reveal</title>
+  <style>
+    body { font-family: sans-serif; text-align: center; background: #f0f0f0; overflow-x: hidden; }
+    #game { margin-top: 50px; }
+    #wordWrapper {
+      display: inline-block;
+      padding: 15px;
+      border: 3px solid transparent;
+      border-radius: 10px;
+      margin-bottom: 20px;
+    }
+    #wordWrapper.complete {
+      animation: pulse-border 1s ease-out;
+      border-color: #4caf50;
+    }
+    @keyframes pulse-border {
+      0% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7); }
+      50% { box-shadow: 0 0 15px 5px rgba(76, 175, 80, 0.4); }
+      100% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
+    }
+    #word { display: flex; justify-content: center; gap: 10px; }
+    .tile {
+      width: 40px; height: 40px;
+      display: flex; align-items: center; justify-content: center;
+      background: #ddd;
+      font-size: 1.5em;
+      font-weight: bold;
+      border-radius: 5px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      text-transform: uppercase;
+      border: none;
+    }
+    .tile.correct {
+      background: #4caf50; color: white;
+    }
+    .tile.hint {
+      background: #aaa; color: white;
+      border: none;
+    }
+    .tile.flash {
+      background-color: #ffe082;
+      transition: background-color 0.8s ease-out;
+    }
+    .keyboard { display: flex; flex-direction: column; align-items: center; }
+    .keyrow { display: flex; justify-content: center; margin: 5px 0; }
+    .key {
+      width: 40px; height: 40px; margin: 2px; border: none;
+      background: #ddd; font-size: 1em; cursor: pointer; border-radius: 4px;
+    }
+    .key.correct { background: #4caf50; color: white; }
+    .key.wrong { background: #f44336; color: white; }
+    .key.hintkey { background: #aaa; color: white; cursor: default; }
+    #summary { margin-top: 30px; font-weight: bold; white-space: pre-line; }
+    #share { margin-top: 10px; cursor: pointer; color: #007BFF; text-decoration: underline; }
+    #helpButton { margin-top: 20px; display: inline-block; padding: 10px 20px; background: #007BFF; color: white; border: none; border-radius: 4px; cursor: pointer; text-decoration: none; font-size: 1em; }
+    #confetti-canvas { position: fixed; pointer-events: none; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+  <script src="encryptedWords.js"></script>
+</head>
+<body>
+  <h1>Reveal</h1>
+  <div id="game">
+    <canvas id="confetti-canvas"></canvas>
+    <div id="wordWrapper"><div id="word"></div></div>
+    <div class="keyboard" id="keyboard"></div>
+    <div id="summary"></div>
+    <div id="share" onclick="shareResult()"></div>
+    <button id="helpButton" onclick="location.href='help.html'">How to Play</button>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+  <script>
+    // Encrypted word list loaded separately
+// const words = [ ... ];
+    const epoch = new Date("2024-01-01T00:00:00Z");
+    const dayIndex = Math.floor((Date.now() - epoch.getTime()) / 86400000);
+    const wordIndex = dayIndex % encryptedWords.length;
+const decrypted = CryptoJS.AES.decrypt(encryptedWords[wordIndex], "base64" + wordIndex);
+const word = decrypted.toString(CryptoJS.enc.Utf8).toUpperCase();
+    let display = Array(word.length).fill({ char: "_", state: "" });
+    let correctCount = 0, hintCount = 0, guessCount = 0;
+    const guessed = new Set();
+    const keyButtons = {};
+    const startTime = Date.now();
+    const wordDiv = document.getElementById("word");
+    const wordWrapper = document.getElementById("wordWrapper");
+    const keyboardDiv = document.getElementById("keyboard");
+    const summaryDiv = document.getElementById("summary");
+    const shareDiv = document.getElementById("share");
+    const saveKey = `reveal-${dayIndex}`;
+    const streakKey = `reveal-streak`;
+
+    function mulberry32(a) {
+      return function() {
+        let t = a += 0x6D2B79F5;
+        t = Math.imul(t ^ t >>> 15, t | 1);
+        t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+        return ((t ^ t >>> 14) >>> 0) / 4294967296;
+      }
+    }
+
+    function getHintOrder(word, seed) {
+      const seen = new Set();
+      const letters = [...word].filter(ch => {
+        if (seen.has(ch)) return false;
+        seen.add(ch);
+        return true;
+      });
+      const rand = mulberry32(seed);
+      for (let i = letters.length - 1; i > 0; i--) {
+        const j = Math.floor(rand() * (i + 1));
+        [letters[i], letters[j]] = [letters[j], letters[i]];
+      }
+      return letters;
+    }
+
+    const hintQueue = getHintOrder(word, dayIndex);
+
+    const saved = localStorage.getItem(saveKey);
+if (saved) {
+  const result = JSON.parse(saved);
+  summaryDiv.innerText = result.summary;
+  shareDiv.innerText = result.shareText;
+  wordDiv.innerHTML = result.finalDisplayHTML;
+  // Remove any lingering .flash classes
+  wordDiv.querySelectorAll('.tile.flash').forEach(el => el.classList.remove('flash'));
+  keyboardDiv.style.display = "none";
+    } else {
+      function updateDisplay(highlightIndexes = []) {
+        while (wordDiv.firstChild) wordDiv.removeChild(wordDiv.firstChild);
+        for (let i = 0; i < display.length; i++) {
+          const tile = display[i];
+          const span = document.createElement("div");
+          span.className = "tile" + (tile.state ? ` ${tile.state}` : "");
+          span.textContent = tile.char;
+          wordDiv.appendChild(span);
+        }
+        highlightIndexes.forEach(i => {
+          const el = wordDiv.children[i];
+          if (el) {
+            el.classList.add("flash");
+            setTimeout(() => el.classList.remove("flash"), 800);
+          }
+        });
+      }
+
+      async function revealHint() {
+        while (hintQueue.length > 0) {
+          const ch = hintQueue.shift();
+          let indexes = [];
+          for (let j = 0; j < word.length; j++) {
+            if (word[j] === ch && display[j].char === "_") {
+              await new Promise(r => setTimeout(r, 300));
+              display[j] = { char: ch.toLowerCase(), state: "hint" };
+              hintCount++;
+              indexes.push(j);
+              if (keyButtons[ch]) {
+                keyButtons[ch].classList.add("hintkey");
+                keyButtons[ch].disabled = true;
+              }
+              updateDisplay(indexes);
+            }
+          }
+          if (indexes.length > 0) break;
+        }
+      }
+
+      function guess(letter, btn) {
+        if (guessed.has(letter)) return;
+        guessed.add(letter);
+        guessCount++;
+
+        let indexes = [];
+        if (word.includes(letter)) {
+          for (let i = 0; i < word.length; i++) {
+            if (word[i] === letter && display[i].char === "_") {
+              display[i] = { char: letter, state: "correct" };
+              correctCount++;
+              indexes.push(i);
+            }
+          }
+          btn.classList.add("correct");
+          updateDisplay(indexes);
+        } else {
+          btn.classList.add("wrong");
+          if (guessCount > 3) revealHint();
+        }
+
+        if (!display.some(d => d.char === "_")) {
+  Object.values(keyButtons).forEach(btn => btn.disabled = true);
+  const duration = Math.floor((Date.now() - startTime) / 1000);
+  const m = Math.floor(duration / 60), s = duration % 60;
+  const t = `${m}m${s.toString().padStart(2, '0')}s`;
+  const summary = `You got ${correctCount} correct letters, ${hintCount} hints, in ${t}.`;
+  const shareText = `Copy: Reveal #${dayIndex} – ${correctCount} correct letters, ${hintCount} hints, ${t}
+Play at: https://tracyp.github.io/reveal/`;
+  const finalDisplayHTML = wordDiv.innerHTML;
+
+  summaryDiv.innerText = summary + `
+Current streak: `;
+  shareDiv.innerText = shareText;
+  wordWrapper.classList.add("complete");
+  confetti({ spread: 180, particleCount: 150, origin: { y: 0.4 } });
+
+  let lastPlayed = parseInt(localStorage.getItem(streakKey + "-last")) || -1;
+  let currentStreak = parseInt(localStorage.getItem(streakKey)) || 0;
+  if (lastPlayed === dayIndex - 1) currentStreak++;
+  else currentStreak = 1;
+  localStorage.setItem(streakKey, currentStreak);
+  localStorage.setItem(streakKey + "-last", dayIndex);
+
+  summaryDiv.innerText += currentStreak;
+
+  localStorage.setItem(saveKey, JSON.stringify({
+    summary: summaryDiv.innerText,
+    shareText,
+    finalDisplayHTML
+  }));
+
+          localStorage.setItem(saveKey, JSON.stringify({
+            summary: summaryDiv.innerText,
+            shareText, finalDisplayHTML
+          }));
+        }
+      }
+
+      function shareResult() {
+        const gameUrl = 'https://tracyp.github.io/reveal/';
+        const text = shareDiv.innerText.replace("Copy: ", "") + `
+Play at: ${gameUrl}`;
+        navigator.clipboard.writeText(text);
+        shareDiv.innerText = "Copied to clipboard!";
+      }
+
+      const layout = [
+        "QWERTYUIOP".split(""),
+        "ASDFGHJKL".split(""),
+        "ZXCVBNM".split("")
+      ];
+
+      layout.forEach(row => {
+        const rowDiv = document.createElement("div");
+        rowDiv.className = "keyrow";
+        row.forEach(ch => {
+          let btn = document.createElement("button");
+          btn.innerText = ch; btn.className = "key";
+          btn.onclick = () => guess(ch, btn);
+          rowDiv.appendChild(btn);
+          keyButtons[ch] = btn;
+        });
+        keyboardDiv.appendChild(rowDiv);
+      });
+
+      updateDisplay();
+    }
+  </script>
+</body>
+</html>
