@@ -4,7 +4,7 @@ const testingMode = true; // Set to true to rotate word every minute for testing
 const testingIntervalSeconds = 60;
 const hintsRequiredBeforeAllowed = 3;
 
-// const encryptedWords = window.encryptedWords;
+const encryptedWords = window.encryptedWords;
 const passphraseBase = "base64";
 
 let currentWord = "";
