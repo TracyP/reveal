@@ -1,178 +1,85 @@
-"use strict";
+// game.js (updated version)
 
-const maxHints = 3;
-let hintsUsed = 0;
-let gameComplete = false;
-let solved = false;
+// Configurable Flags
+const TESTING_MODE = false;
+const TESTING_INTERVAL_MINUTES = 1;
+const TESTING_ANCHOR_MINUTE = 0;
+const epoch = new Date(2023, 0, 1, 0, 0, 0); // Jan 1, 2023 local time
 
-const wordWrapper = document.getElementById("wordWrapper");
-const wordDiv = document.getElementById("word");
-const keyboardDiv = document.getElementById("keyboard");
-const summaryDiv = document.getElementById("summary");
-const shareDiv = document.getElementById("share");
-const hintsLeftDiv = document.getElementById("hintsLeft");
-const modeIndicator = document.getElementById("modeIndicator");
-
-let keyButtons = {};
+const passphrase = "base64";
 let currentWord = "";
 let revealedLetters = [];
+let guessedLetters = [];
 let hintOrder = [];
-let guesses = [];
-let startTime;
-let endTime;
+let hintsUsed = 0;
+const maxHints = 3;
+let guessesMade = 0;
+let completed = false;
+const keyButtons = {}; // To track key button DOM references
 
-// CONFIGURATION
-const testingMode = true;  // Toggle to true for 1-minute rapid test
-const wordListLength = encryptedWords.length;
-
-const epochDateStr = "2025-07-14T00:00:00"; // Local midnight start
-const wordDurationMinutes = testingMode ? 1 : 1440; // 1 min for test, else daily
-
-function decryptWord(encStr, index) {
-  const key = "base64" + index.toString();
-  try {
-    const decrypted = CryptoJS.AES.decrypt(encStr, key).toString(CryptoJS.enc.Utf8);
-    if (!decrypted) throw new Error("Decryption failed or empty");
-    return decrypted.toUpperCase();
-  } catch (e) {
-    console.error("Decryption error:", e);
-    return null;
-  }
-}
-
-function getDayIndex() {
+function getPuzzleIndex() {
   const now = new Date();
-  const epoch = new Date(epochDateStr);
-  const elapsedMs = now - epoch;
-  const elapsedMins = Math.floor(elapsedMs / 60000);
-  return Math.floor(elapsedMins / wordDurationMinutes);
-}
-
-function getWordIndex() {
-  const dayIndex = getDayIndex();
-  if (dayIndex < wordListLength) return dayIndex;
-  return dayIndex % wordListLength;
-}
-
-function loadWord() {
-  const idx = getWordIndex();
-  const decrypted = decryptWord(encryptedWords[idx], idx);
-  if (!decrypted) {
-    alert("Failed to decrypt word.");
-    return null;
+  if (TESTING_MODE) {
+    const minutesSinceHour = now.getMinutes() - TESTING_ANCHOR_MINUTE;
+    return minutesSinceHour >= 0 ? minutesSinceHour : 0;
+  } else {
+    const msPerDay = 86400000;
+    return Math.floor((now - epoch) / msPerDay);
   }
-  return decrypted;
 }
 
-function initHintOrder(word) {
-  const indices = Array.from(word).map((_, i) => i);
-  const seed = word.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
-  for (let i = indices.length - 1; i > 0; i--) {
-    const j = (seed + i * i) % (i + 1);
-    [indices[i], indices[j]] = [indices[j], indices[i]];
+function getEncryptedWord(index) {
+  if (index < encryptedWords.length) {
+    return encryptedWords[index];
   }
-  return indices;
+  const pseudoRandomIndex = index % encryptedWords.length;
+  return encryptedWords[pseudoRandomIndex];
 }
 
-function buildKeyboard() {
-  keyboardDiv.innerHTML = "";
-  keyButtons = {};
-  const rows = ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"];
-  rows.forEach(row => {
-    const rowDiv = document.createElement("div");
-    rowDiv.className = "keyrow";
-    for (const letter of row) {
-      const btn = document.createElement("button");
-      btn.className = "key";
-      btn.textContent = letter;
-      btn.dataset.letter = letter;
-      btn.addEventListener("click", () => handleGuess(letter));
-      rowDiv.appendChild(btn);
-      keyButtons[letter] = btn;
-    }
-    keyboardDiv.appendChild(rowDiv);
-  });
+function decryptWord(index) {
+  const key = passphrase + index;
+  const encrypted = getEncryptedWord(index);
+  const bytes = CryptoJS.AES.decrypt(encrypted, key);
+  return bytes.toString(CryptoJS.enc.Utf8);
 }
 
-function disableKeyboard() {
-  Object.values(keyButtons).forEach(btn => {
-    btn.disabled = true;
-    btn.classList.add("disabled");
+function createTile(letter, status = "") {
+  const tile = document.createElement("div");
+  tile.className = "tile" + (status ? ` ${status}` : "");
+  tile.textContent = letter;
+  return tile;
+}
+
+function renderWord() {
+  const container = document.getElementById("word");
+  container.innerHTML = "";
+  currentWord.split("").forEach((ch, idx) => {
+    const status = revealedLetters[idx];
+    const tile = createTile(status ? ch : "", status);
+    tile.style.animationDelay = `${idx * 500}ms`;
+    container.appendChild(tile);
   });
 }
 
 function disableKey(letter) {
-  const btn = keyButtons[letter];
-  if (!btn) return;
-  btn.disabled = true;
-  btn.classList.add("hintkey");
-}
-
-function renderWord() {
-  wordDiv.innerHTML = "";
-  for (let i = 0; i < currentWord.length; i++) {
-    const tile = document.createElement("div");
-    tile.className = "tile";
-    tile.textContent = revealedLetters[i] ? currentWord[i] : "";
-    if (revealedLetters[i] === "correct") tile.classList.add("correct");
-    else if (revealedLetters[i] === "hint") tile.classList.add("hint");
-    wordDiv.appendChild(tile);
-  }
+  const key = keyButtons[letter.toUpperCase()];
+  if (key) key.classList.add("hintkey");
 }
 
 function updateHintsLeft() {
-  hintsLeftDiv.innerHTML = "";
+  const hints = document.getElementById("hintsLeft");
+  hints.innerHTML = "";
   for (let i = 0; i < maxHints; i++) {
     const led = document.createElement("div");
     led.className = "hint-led" + (i < hintsUsed ? " used" : "");
-    hintsLeftDiv.appendChild(led);
+    hints.appendChild(led);
   }
-}
-
-function updateSummary() {
-  if (!gameComplete) {
-    summaryDiv.textContent = "";
-    shareDiv.textContent = "";
-    return;
-  }
-  const durationSeconds = Math.floor((endTime - startTime) / 1000);
-  const correctCount = revealedLetters.filter(v => v === "correct").length;
-  const hintCount = revealedLetters.filter(v => v === "hint").length;
-  let resultText = solved ? "Solved" : "Fail";
-  summaryDiv.textContent = 
-    `${resultText}\nCorrect letters: ${correctCount}\nHints used: ${hintCount}\nDuration: ${durationSeconds}s\nPuzzle #: ${getDayIndex()}`;
-  shareDiv.textContent = "Share your result";
-}
-
-function showWordComplete(success) {
-  gameComplete = true;
-  solved = success;
-  endTime = new Date();
-  wordWrapper.classList.add("complete");
-  disableKeyboard();
-  updateSummary();
-  if (success) {
-    startConfetti();
-  } else {
-    startFailEffect();
-  }
-  renderWord();
-}
-
-function startConfetti() {
-  // Implement your confetti here or keep this as placeholder
-  console.log("Confetti!");
-}
-
-function startFailEffect() {
-  wordWrapper.style.animation = "shake 0.5s";
-  setTimeout(() => { wordWrapper.style.animation = ""; }, 500);
 }
 
 function revealHint() {
   if (hintsUsed >= maxHints) return false;
   const idx = hintOrder[hintsUsed];
-  if (revealedLetters[idx]) return false; 
+  if (revealedLetters[idx]) return false;
   revealedLetters[idx] = "hint";
   disableKey(currentWord[idx]);
   hintsUsed++;
@@ -184,131 +91,115 @@ function revealHint() {
   return true;
 }
 
-function handleGuess(letter) {
-  if (gameComplete) return;
-  letter = letter.toUpperCase();
-  if (guesses.includes(letter)) return;
-  guesses.push(letter);
-  if (currentWord.includes(letter)) {
-    for (let i = 0; i < currentWord.length; i++) {
-      if (currentWord[i] === letter) {
-        revealedLetters[i] = "correct";
-      }
-    }
+function processGuess(letter) {
+  if (completed || guessedLetters.includes(letter)) return;
+  guessedLetters.push(letter);
+  guessesMade++;
+  const match = currentWord.includes(letter);
+  if (match) {
+    currentWord.split("").forEach((ch, idx) => {
+      if (ch === letter) revealedLetters[idx] = "correct";
+    });
     keyButtons[letter].classList.add("correct");
   } else {
     keyButtons[letter].classList.add("wrong");
-    if (hintsUsed < maxHints) {
-      revealHint();
-    } else {
-      showWordComplete(false);
+    if (guessesMade > 3) {
+      if (!revealHint()) {
+        showWordComplete(false);
+        return;
+      }
     }
   }
   renderWord();
-  updateHintsLeft();
-  checkComplete();
+  checkCompletion();
 }
 
-function checkComplete() {
-  if (revealedLetters.every(v => v === "correct" || v === "hint")) {
+function checkCompletion() {
+  if (revealedLetters.every(s => s === "correct")) {
     showWordComplete(true);
   }
 }
 
-function shareResult() {
-  if (!gameComplete) return;
-  const durationSeconds = Math.floor((endTime - startTime) / 1000);
-  const correctCount = revealedLetters.filter(v => v === "correct").length;
-  const hintCount = revealedLetters.filter(v => v === "hint").length;
-  const puzzleNum = getDayIndex();
-  const text = `Reveal Puzzle #${puzzleNum} - ${solved ? "Solved" : "Fail"}\n` +
-    `Correct letters: ${correctCount}, Hints used: ${hintCount}, Time: ${durationSeconds}s\n` +
-    `Try it yourself at: https://yourdomain/reveal`;
-  if (navigator.share) {
-    navigator.share({ text }).catch(console.error);
-  } else {
-    prompt("Copy your result to share:", text);
-  }
+function showWordComplete(solved) {
+  completed = true;
+  localStorage.setItem("played-" + getPuzzleIndex(), solved ? "solved" : "fail");
+  document.getElementById("wordWrapper").classList.add("complete");
+  Object.values(keyButtons).forEach(btn => btn.disabled = true);
+  renderWord();
+  updateSummary(solved);
+  fetchDefinition(currentWord);
 }
 
-function saveGame() {
-  if (!gameComplete) return;
-  const data = {
-    wordIndex: getWordIndex(),
-    revealedLetters,
-    hintsUsed,
-    guesses,
-    solved,
-    duration: Math.floor((endTime - startTime) / 1000),
-    timestamp: Date.now()
-  };
-  localStorage.setItem("revealGameSave", JSON.stringify(data));
+function updateSummary(solved) {
+  const summary = document.getElementById("summary");
+  const status = solved ? "Solved" : "Fail";
+  summary.textContent = `${status}  \nCorrect: ${revealedLetters.filter(s => s === "correct").length}  \nHints: ${hintsUsed}`;
 }
 
-function loadGame() {
-  const dataStr = localStorage.getItem("revealGameSave");
-  if (!dataStr) return false;
-  try {
-    const data = JSON.parse(dataStr);
-    if (data.wordIndex !== getWordIndex()) return false;
-    revealedLetters = data.revealedLetters;
-    hintsUsed = data.hintsUsed;
-    guesses = data.guesses;
-    solved = data.solved;
-    gameComplete = true;
-    startTime = new Date(Date.now() - (data.duration * 1000));
-    endTime = new Date();
-    updateHintsLeft();
-    buildKeyboard();
-    disableKeyboard();
-    guesses.forEach(l => {
-      if (revealedLetters.some((v,i) => currentWord[i] === l && v === "correct")) {
-        keyButtons[l].classList.add("correct");
-      } else if (revealedLetters.some((v,i) => currentWord[i] === l && v === "hint")) {
-        keyButtons[l].classList.add("hintkey");
-        keyButtons[l].disabled = true;
-      } else {
-        keyButtons[l].classList.add("wrong");
-      }
+function fetchDefinition(word) {
+  fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`)
+    .then(res => res.json())
+    .then(data => {
+      const def = data[0]?.meanings[0]?.definitions[0]?.definition;
+      if (def) document.getElementById("definition").textContent = `\u{1F4D6} ${def}`;
+    })
+    .catch(() => {
+      document.getElementById("definition").textContent = "No definition found.";
     });
-    updateSummary();
-    renderWord();
-    return true;
-  } catch {
-    return false;
-  }
 }
 
-function clearGameSave() {
-  localStorage.removeItem("revealGameSave");
+function shareResult() {
+  const idx = getPuzzleIndex();
+  const time = new Date().toLocaleTimeString();
+  const solved = revealedLetters.every(s => s === "correct");
+  const message = `Reveal ${idx} - ${solved ? "Solved" : "Fail"}\nCorrect: ${revealedLetters.filter(s => s === "correct").length}\nHints: ${hintsUsed}\nPlayed at ${time}\nhttps://your-game-url`;
+  navigator.clipboard.writeText(message).then(() => {
+    alert("Result copied to clipboard!");
+  });
+}
+
+function buildKeyboard() {
+  const kb = document.getElementById("keyboard");
+  kb.innerHTML = "";
+  const rows = ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"];
+  rows.forEach(row => {
+    const rowDiv = document.createElement("div");
+    rowDiv.className = "keyrow";
+    row.split("").forEach(letter => {
+      const btn = document.createElement("button");
+      btn.textContent = letter;
+      btn.className = "key";
+      btn.onclick = () => processGuess(letter);
+      keyButtons[letter] = btn;
+      rowDiv.appendChild(btn);
+    });
+    kb.appendChild(rowDiv);
+  });
+}
+
+function loadStatsIfPlayed() {
+  const result = localStorage.getItem("played-" + getPuzzleIndex());
+  if (result) {
+    completed = true;
+    revealedLetters = currentWord.split("").map((_, i) => result === "solved" ? "correct" : "hint");
+    renderWord();
+    Object.values(keyButtons).forEach(btn => btn.disabled = true);
+    updateSummary(result === "solved");
+    updateHintsLeft();
+    fetchDefinition(currentWord);
+  }
 }
 
 function startGame() {
-  currentWord = loadWord();
-  if (!currentWord) return;
+  const idx = getPuzzleIndex();
+  currentWord = decryptWord(idx).toUpperCase();
   revealedLetters = new Array(currentWord.length).fill(null);
-  hintOrder = initHintOrder(currentWord);
-  guesses = [];
-  hintsUsed = 0;
-  gameComplete = false;
-  solved = false;
-  startTime = new Date();
-  endTime = null;
-  wordWrapper.classList.remove("complete");
-  summaryDiv.textContent = "";
-  shareDiv.textContent = "";
-  updateHintsLeft();
+  hintOrder = [...Array(currentWord.length).keys()].sort(() => Math.random() - 0.5);
   buildKeyboard();
+  updateHintsLeft();
+  document.getElementById("modeIndicator").textContent = TESTING_MODE ? "Testing Mode" : "";
   renderWord();
-  modeIndicator.textContent = testingMode ? "Testing Mode: New word every minute" : "Production Mode: New word daily";
-  if (loadGame()) {
-    // Loaded previous completed game state
-  }
+  loadStatsIfPlayed();
 }
 
-window.onload = () => {
-  startGame();
-  window.addEventListener("beforeunload", () => {
-    if (gameComplete) saveGame();
-  });
-};
+window.onload = startGame;
