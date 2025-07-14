@@ -46,6 +46,7 @@
     .key.correct { background: #4caf50; color: white; }
     .key.wrong { background: #f44336; color: white; }
     .key.hintkey { background: #aaa; color: white; cursor: default; }
+    .key.disabled { cursor: not-allowed; opacity: 0.6; }
     #summary { margin-top: 30px; font-weight: bold; white-space: pre-line; }
     #share { margin-top: 10px; cursor: pointer; color: #007BFF; text-decoration: underline; }
     #helpButton { margin-top: 20px; display: inline-block; padding: 10px 20px; background: #007BFF; color: white; border: none; border-radius: 4px; cursor: pointer; text-decoration: none; font-size: 1em; }
@@ -66,9 +67,10 @@
   </div>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
   <script>
-    const epoch = new Date("2025-07-14T20:50:00");
-    const secondsPerPuzzle = 60;
-    const puzzleIndex = Math.floor((Date.now() - epoch.getTime()) / (secondsPerPuzzle * 1000));
+    const now = new Date();
+    const localMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const secondsPerPuzzle = 86400; // 24h
+    const puzzleIndex = Math.floor((Date.now() - localMidnight.getTime()) / (secondsPerPuzzle * 1000));
 
     function pseudoRandomModIndex(index, max) {
       const seed = index.toString().split('').reduce((a, b) => a + parseInt(b), 0);
@@ -91,6 +93,7 @@
     const guessed = new Set();
     const revealed = Array(word.length).fill(false);
     const revealedLetters = Array(word.length).fill(null);
+    const stats = { correct: 0, hints: 0 };
 
     function renderWord() {
       wordDisplay.innerHTML = "";
@@ -128,11 +131,16 @@
     function updateKeyboard(letter, result) {
       const btn = document.getElementById(`key-${letter}`);
       if (btn) btn.classList.add(result);
+      if (result === "hintkey" || result === "correct" || result === "wrong") btn.disabled = true;
     }
+
+    let guessCount = 0;
+    const startTime = Date.now();
 
     function guessLetter(letter) {
       if (guessed.has(letter)) return;
       guessed.add(letter);
+      guessCount++;
 
       let matched = false;
       for (let i = 0; i < word.length; i++) {
@@ -142,33 +150,45 @@
         }
       }
 
-      updateKeyboard(letter, matched ? "correct" : "wrong");
-
-      if (!matched) {
-        for (let i = 0; i < word.length; i++) {
-          if (!revealed[i]) {
-            revealed[i] = true;
-            break;
+      if (matched) {
+        stats.correct++;
+        updateKeyboard(letter, "correct");
+      } else {
+        if (guessCount > 3) {
+          for (let i = 0; i < word.length; i++) {
+            if (!revealed[i]) {
+              revealed[i] = true;
+              updateKeyboard(word[i], "hintkey");
+              stats.hints++;
+              break;
+            }
           }
         }
+        updateKeyboard(letter, "wrong");
       }
 
       renderWord();
       checkComplete();
     }
 
+    function disableAllKeys() {
+      document.querySelectorAll(".key").forEach(btn => btn.disabled = true);
+    }
+
     function checkComplete() {
       if (revealed.every(val => val)) {
         document.getElementById("wordWrapper").classList.add("complete");
-        summary.textContent = `✅ You revealed the word!`;
+        disableAllKeys();
+        const duration = Math.round((Date.now() - startTime) / 1000);
+        summary.textContent = `✅ You revealed the word!\nCorrect: ${stats.correct}, Hints: ${stats.hints}, Time: ${duration}s`;
+        localStorage.setItem("reveal-stats", JSON.stringify(stats));
         confetti();
       }
     }
 
     function shareResult() {
-      const correct = [...guessed].filter(l => word.includes(l)).length;
-      const hints = revealed.filter((v, i) => v && !guessed.has(word[i])).length;
-      const text = `Reveal ${puzzleIndex}: ${correct} correct, ${hints} hint${hints !== 1 ? "s" : ""}`;
+      const duration = Math.round((Date.now() - startTime) / 1000);
+      const text = `Reveal ${puzzleIndex}: ${stats.correct} correct, ${stats.hints} hint${stats.hints !== 1 ? "s" : ""}, ${duration}s\nhttps://tracyp.github.io/reveal/`;
       navigator.clipboard.writeText(text);
       alert("Copied to clipboard:\n" + text);
     }
