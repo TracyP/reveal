@@ -78,7 +78,7 @@
     const dayIndex = Math.floor((Date.now() - epoch.getTime()) / 86400000);
     const word = words[dayIndex % words.length].toUpperCase();
     let display = Array(word.length).fill({ char: "_", state: "" });
-    let correctCount = 0, hintCount = 0;
+    let correctCount = 0, hintCount = 0, guessCount = 0;
     const guessed = new Set();
     const keyButtons = {};
     const startTime = Date.now();
@@ -166,6 +166,7 @@
       function guess(letter, btn) {
         if (guessed.has(letter)) return;
         guessed.add(letter);
+        guessCount++;
 
         let indexes = [];
         if (word.includes(letter)) {
@@ -180,7 +181,7 @@
           updateDisplay(indexes);
         } else {
           btn.classList.add("wrong");
-          revealHint();
+          if (guessCount > 3) revealHint();
         }
 
         if (!display.some(d => d.char === "_")) {
@@ -188,10 +189,12 @@
           const m = Math.floor(duration / 60), s = duration % 60;
           const t = `${m}m${s.toString().padStart(2, '0')}s`;
           const summary = `You got ${correctCount} correct letters, ${hintCount} hints, in ${t}.`;
-          const shareText = `Copy: Reveal #${dayIndex} – ${correctCount} correct letters, ${hintCount} hints, ${t}`;
+          const shareText = `Copy: Reveal #${dayIndex} – ${correctCount} correct letters, ${hintCount} hints, ${t}
+Play at: https://tracyp.github.io/reveal/`;
           const finalDisplayHTML = wordDiv.innerHTML;
 
-          summaryDiv.innerText = summary + `\nCurrent streak: `;
+          summaryDiv.innerText = summary + `
+Current streak: `;
           shareDiv.innerText = shareText;
           wordWrapper.classList.add("complete");
           confetti({ spread: 180, particleCount: 150, origin: { y: 0.4 } });
@@ -213,7 +216,10 @@
       }
 
       function shareResult() {
-        navigator.clipboard.writeText(shareDiv.innerText.replace("Copy: ", ""));
+        const gameUrl = 'https://tracyp.github.io/reveal/';
+        const text = shareDiv.innerText.replace("Copy: ", "") + `
+Play at: ${gameUrl}`;
+        navigator.clipboard.writeText(text);
         shareDiv.innerText = "Copied to clipboard!";
       }
 
