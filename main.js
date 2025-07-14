@@ -1,6 +1,6 @@
 // main.js
 
-const testingMode = false; // Set to true to rotate word every minute for testing
+const testingMode = true; // Set to true to rotate word every minute for testing
 const testingIntervalSeconds = 60;
 const hintsRequiredBeforeAllowed = 3;
 
