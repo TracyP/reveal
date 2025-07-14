@@ -87,7 +87,8 @@ function disableKey(letter) {
 }
 
 function handleGuess(letter) {
-  if (gameComplete || revealedLetters.includes("")) return;
+  // if (gameComplete || revealedLetters.includes("")) return;
+  if (gameComplete) return;
   const guessCount = revealedLetters.filter(x => x === "guess").length;
   let found = false;
   currentWord.split("").forEach((char, i) => {
