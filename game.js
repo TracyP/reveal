@@ -174,4 +174,141 @@ function revealHint() {
   const idx = hintOrder[hintsUsed];
   if (revealedLetters[idx]) return false; 
   revealedLetters[idx] = "hint";
- 
+  disableKey(currentWord[idx]);
+  hintsUsed++;
+  updateHintsLeft();
+  renderWord();
+  if (hintsUsed === maxHints) {
+    showWordComplete(false);
+  }
+  return true;
+}
+
+function handleGuess(letter) {
+  if (gameComplete) return;
+  letter = letter.toUpperCase();
+  if (guesses.includes(letter)) return;
+  guesses.push(letter);
+  if (currentWord.includes(letter)) {
+    for (let i = 0; i < currentWord.length; i++) {
+      if (currentWord[i] === letter) {
+        revealedLetters[i] = "correct";
+      }
+    }
+    keyButtons[letter].classList.add("correct");
+  } else {
+    keyButtons[letter].classList.add("wrong");
+    if (hintsUsed < maxHints) {
+      revealHint();
+    } else {
+      showWordComplete(false);
+    }
+  }
+  renderWord();
+  updateHintsLeft();
+  checkComplete();
+}
+
+function checkComplete() {
+  if (revealedLetters.every(v => v === "correct" || v === "hint")) {
+    showWordComplete(true);
+  }
+}
+
+function shareResult() {
+  if (!gameComplete) return;
+  const durationSeconds = Math.floor((endTime - startTime) / 1000);
+  const correctCount = revealedLetters.filter(v => v === "correct").length;
+  const hintCount = revealedLetters.filter(v => v === "hint").length;
+  const puzzleNum = getDayIndex();
+  const text = `Reveal Puzzle #${puzzleNum} - ${solved ? "Solved" : "Fail"}\n` +
+    `Correct letters: ${correctCount}, Hints used: ${hintCount}, Time: ${durationSeconds}s\n` +
+    `Try it yourself at: https://yourdomain/reveal`;
+  if (navigator.share) {
+    navigator.share({ text }).catch(console.error);
+  } else {
+    prompt("Copy your result to share:", text);
+  }
+}
+
+function saveGame() {
+  if (!gameComplete) return;
+  const data = {
+    wordIndex: getWordIndex(),
+    revealedLetters,
+    hintsUsed,
+    guesses,
+    solved,
+    duration: Math.floor((endTime - startTime) / 1000),
+    timestamp: Date.now()
+  };
+  localStorage.setItem("revealGameSave", JSON.stringify(data));
+}
+
+function loadGame() {
+  const dataStr = localStorage.getItem("revealGameSave");
+  if (!dataStr) return false;
+  try {
+    const data = JSON.parse(dataStr);
+    if (data.wordIndex !== getWordIndex()) return false;
+    revealedLetters = data.revealedLetters;
+    hintsUsed = data.hintsUsed;
+    guesses = data.guesses;
+    solved = data.solved;
+    gameComplete = true;
+    startTime = new Date(Date.now() - (data.duration * 1000));
+    endTime = new Date();
+    updateHintsLeft();
+    buildKeyboard();
+    disableKeyboard();
+    guesses.forEach(l => {
+      if (revealedLetters.some((v,i) => currentWord[i] === l && v === "correct")) {
+        keyButtons[l].classList.add("correct");
+      } else if (revealedLetters.some((v,i) => currentWord[i] === l && v === "hint")) {
+        keyButtons[l].classList.add("hintkey");
+        keyButtons[l].disabled = true;
+      } else {
+        keyButtons[l].classList.add("wrong");
+      }
+    });
+    updateSummary();
+    renderWord();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function clearGameSave() {
+  localStorage.removeItem("revealGameSave");
+}
+
+function startGame() {
+  currentWord = loadWord();
+  if (!currentWord) return;
+  revealedLetters = new Array(currentWord.length).fill(null);
+  hintOrder = initHintOrder(currentWord);
+  guesses = [];
+  hintsUsed = 0;
+  gameComplete = false;
+  solved = false;
+  startTime = new Date();
+  endTime = null;
+  wordWrapper.classList.remove("complete");
+  summaryDiv.textContent = "";
+  shareDiv.textContent = "";
+  updateHintsLeft();
+  buildKeyboard();
+  renderWord();
+  modeIndicator.textContent = testingMode ? "Testing Mode: New word every minute" : "Production Mode: New word daily";
+  if (loadGame()) {
+    // Loaded previous completed game state
+  }
+}
+
+window.onload = () => {
+  startGame();
+  window.addEventListener("beforeunload", () => {
+    if (gameComplete) saveGame();
+  });
+};
