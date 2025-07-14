@@ -68,7 +68,7 @@
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
   <script>
     const now = new Date();
-    const testingMode = false; // Set true for 1-minute puzzles
+    const testingMode = true; // Set true for 1-minute puzzles
     const secondsPerPuzzle = testingMode ? 60 : 86400;
     const anchorTime = testingMode
       ? new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours(), 0, 0)
