@@ -185,9 +185,8 @@
         }
 
         if (!display.some(d => d.char === "_")) {
-          const duration = Math.floor((Date.now() - startTime) / 1000);
-          const m = Math.floor(duration / 60), s = duration % 60;
-          const t = `${m}m${s.toString().padStart(2, '0')}s`;
+          Object.values(keyButtons).forEach(btn => btn.disabled = true);
+  Object.values(keyButtons).forEach(btn => btn.disabled = true);$1m${s.toString().padStart(2, '0')}s`;
           const summary = `You got ${correctCount} correct letters, ${hintCount} hints, in ${t}.`;
           const shareText = `Copy: Reveal #${dayIndex} – ${correctCount} correct letters, ${hintCount} hints, ${t}
 Play at: https://tracyp.github.io/reveal/`;
