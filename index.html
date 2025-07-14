@@ -66,15 +66,20 @@
   </div>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
   <script>
-    const epoch = new Date("2025-07-14T21:05:00");
+    const epoch = new Date("2025-07-14T20:50:00");
     const secondsPerPuzzle = 60;
     const puzzleIndex = Math.floor((Date.now() - epoch.getTime()) / (secondsPerPuzzle * 1000));
+
+    function pseudoRandomModIndex(index, max) {
+      const seed = index.toString().split('').reduce((a, b) => a + parseInt(b), 0);
+      return (index * 17 + seed) % max;
+    }
 
     let wordIndex;
     if (puzzleIndex < encryptedWords.length) {
       wordIndex = puzzleIndex;
     } else {
-      wordIndex = puzzleIndex % encryptedWords.length;
+      wordIndex = pseudoRandomModIndex(puzzleIndex, encryptedWords.length);
     }
 
     const decrypted = CryptoJS.AES.decrypt(encryptedWords[wordIndex], "base64" + wordIndex);
