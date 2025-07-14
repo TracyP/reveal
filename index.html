@@ -120,6 +120,20 @@
     const startTime = Date.now();
     let gameOver = false;
 
+    // Check localStorage if puzzle completed before
+    const completedKey = `reveal-completed-${puzzleIndex}`;
+    const savedDataRaw = localStorage.getItem(completedKey);
+    if (savedDataRaw) {
+      // Load saved stats and set game over & reveal all letters
+      const savedData = JSON.parse(savedDataRaw);
+      guessed = new Set(savedData.guessed || []);
+      revealed = Array(word.length).fill(true);
+      stats = { correct: savedData.correct || 0, hints: savedData.hints || 0 };
+      guessCount = savedData.guessCount || 0;
+      gameOver = true;
+      showEndState();
+    }
+
     // Render the word tiles
     function renderWord() {
       wordDisplay.innerHTML = "";
@@ -150,7 +164,29 @@
           btn.textContent = char;
           btn.className = "key";
           btn.id = `key-${char}`;
-          btn.onclick = () => guessLetter(char);
+
+          // If game over or this letter was guessed, disable button and set correct class
+          if (gameOver) {
+            btn.disabled = true;
+            btn.classList.add("disabled");
+            if (guessed.has(char)) {
+              if (word.includes(char)) btn.classList.add("correct");
+              else btn.classList.add("wrong");
+            } else if (revealed.some((v,i) => word[i] === char && !guessed.has(char))) {
+              btn.classList.add("hintkey");
+              btn.disabled = true;
+            }
+          } else {
+            if (guessed.has(char)) {
+              if (word.includes(char)) btn.classList.add("correct");
+              else btn.classList.add("wrong");
+              btn.disabled = true;
+              btn.classList.add("disabled");
+            } else {
+              btn.onclick = () => guessLetter(char);
+            }
+          }
+
           rowDiv.appendChild(btn);
         }
         keyboardContainer.appendChild(rowDiv);
@@ -176,32 +212,17 @@
       });
     }
 
-    // Check if all letters revealed (game complete)
-    function checkComplete() {
-      if (revealed.every(val => val)) {
-        gameOver = true;
-        document.getElementById("wordWrapper").classList.add("complete");
-        disableAllKeys();
+    // Show end-of-game state: reveal all letters, disable keys, show stats
+    function showEndState() {
+      revealed.fill(true);
+      renderWord();
+      renderKeyboard();
+      document.getElementById("wordWrapper").classList.add("complete");
+      disableAllKeys();
 
-        const duration = Math.round((Date.now() - startTime) / 1000);
-        summary.textContent = `✅ You revealed the word!\nCorrect guesses: ${stats.correct}\nHints used: ${stats.hints}\nTime: ${duration}s`;
-        localStorage.setItem("reveal-stats", JSON.stringify({
-          correct: stats.correct,
-          hints: stats.hints,
-          duration: duration,
-          puzzleIndex: puzzleIndex,
-          word: word
-        }));
-
-        // Show confetti
-        confetti({
-          particleCount: 150,
-          spread: 70,
-          origin: { y: 0.6 }
-        });
-
-        shareDiv.textContent = "Share your result";
-      }
+      const duration = Math.round((Date.now() - startTime) / 1000);
+      summary.textContent = `✅ You revealed the word!\nCorrect guesses: ${stats.correct}\nHints used: ${stats.hints}\nTime: ${duration}s`;
+      shareDiv.textContent = "Share your result";
     }
 
     // Main guess handler
@@ -241,13 +262,44 @@
       checkComplete();
     }
 
+    // Check if all letters revealed (game complete)
+    function checkComplete() {
+      if (revealed.every(val => val)) {
+        gameOver = true;
+        document.getElementById("wordWrapper").classList.add("complete");
+        disableAllKeys();
+
+        const duration = Math.round((Date.now() - startTime) / 1000);
+        summary.textContent = `✅ You revealed the word!\nCorrect guesses: ${stats.correct}\nHints used: ${stats.hints}\nTime: ${duration}s`;
+
+        // Save completion info for this puzzleIndex
+        localStorage.setItem(completedKey, JSON.stringify({
+          correct: stats.correct,
+          hints: stats.hints,
+          guessCount: guessCount,
+          guessed: Array.from(guessed)
+        }));
+
+        // Show confetti
+        confetti({
+          particleCount: 150,
+          spread: 70,
+          origin: { y: 0.6 }
+        });
+
+        shareDiv.textContent = "Share your result";
+      }
+    }
+
     // Share game result text
     function shareResult() {
       if (!gameOver) return alert("Finish the puzzle first!");
-      const statsStored = JSON.parse(localStorage.getItem("reveal-stats"));
-      if (!statsStored) return alert("No stats to share.");
+      const statsStoredRaw = localStorage.getItem(completedKey);
+      if (!statsStoredRaw) return alert("No stats to share.");
 
-      const shareText = `Reveal ${statsStored.puzzleIndex}: ${statsStored.correct} correct, ${statsStored.hints} hint${statsStored.hints !== 1 ? 's' : ''}, ${statsStored.duration}s\nhttps://tracyp.github.io/reveal/`;
+      const statsStored = JSON.parse(statsStoredRaw);
+
+      const shareText = `Reveal ${puzzleIndex}: ${statsStored.correct} correct, ${statsStored.hints} hint${statsStored.hints !== 1 ? 's' : ''}, \nhttps://tracyp.github.io/reveal/`;
       navigator.clipboard.writeText(shareText).then(() => {
         alert("Copied to clipboard:\n" + shareText);
       }).catch(() => {
@@ -255,7 +307,7 @@
       });
     }
 
-    // Initialize
+    // Init render
     renderWord();
     renderKeyboard();
 
