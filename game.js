@@ -22,7 +22,7 @@ let startTime;
 let endTime;
 
 // CONFIGURATION
-const testingMode = false;  // Toggle to true for 1-minute rapid test
+const testingMode = true;  // Toggle to true for 1-minute rapid test
 const wordListLength = encryptedWords.length;
 
 const epochDateStr = "2025-07-14T00:00:00"; // Local midnight start
