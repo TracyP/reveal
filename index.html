@@ -129,8 +129,7 @@
       keyboardDiv.style.display = "none";
     } else {
       function updateDisplay(highlightIndexes = []) {
-        // Clean up lingering flickers by removing class from all tiles
-        wordDiv.querySelectorAll(".tile.flicker").forEach(tile => tile.classList.remove("flicker"));
+        // Fully clear old flickers and borders before rebuilding
         while (wordDiv.firstChild) wordDiv.removeChild(wordDiv.firstChild);
         for (let i = 0; i < display.length; i++) {
           const tile = display[i];
@@ -141,6 +140,7 @@
           wordDiv.appendChild(span);
         }
       }
+
       async function revealHint() {
         while (hintQueue.length > 0) {
           const ch = hintQueue.shift();
