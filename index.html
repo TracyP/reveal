@@ -193,6 +193,7 @@
 
       const duration = savedDuration !== null ? savedDuration : Math.round((Date.now() - startTime) / 1000);
       summary.textContent = `✅ You revealed the word!\nCorrect guesses: ${stats.correct}\nHints used: ${stats.hints}\nTime: ${duration}s`;
+      summary.style.display = "block";
 
       if (savedDuration === null) {
         confettiBurst();
@@ -279,11 +280,15 @@
         }
       }
 
+      // THIS IS THE KEY FIX: set summary after keyboard rendered and keys updated
       summary.textContent = `✅ You revealed the word!\nCorrect guesses: ${stats.correct}\nHints used: ${stats.hints}\nTime: ${savedData.duration}s`;
+      summary.style.display = "block";
+
     } else {
       startTime = Date.now();
       renderWord();
       renderKeyboard();
+      summary.style.display = "none";
     }
   </script>
 </body>
