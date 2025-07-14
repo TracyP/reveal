@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Reveal</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      background: #e6f0f0; /* pastel, vision-friendly */
+      overflow-x: hidden;
+      margin: 0; padding: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+    }
+    h1 {
+      margin-top: 1rem;
+      margin-bottom: 0.3rem;
+      color: #1b4d4d;
+    }
+    #modeIndicator {
+      font-weight: bold;
+      margin-bottom: 1rem;
+      color: #2c6e6e;
+    }
+    #game {
+      margin-top: 0;
+      padding: 1rem;
+      max-width: 600px;
+      width: 90vw;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    #wordWrapper {
+      display: inline-block;
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      border: 3px solid transparent;
+      transition: border-color 0.3s ease;
+    }
+    #wordWrapper.complete {
+      border-color: #4caf50;
+      animation: pulse-border 1s ease-out;
+    }
+    #wordWrapper.fail {
+      border-color: #f44336;
+      animation: shake 0.5s ease;
+    }
+    @keyframes pulse-border {
+      0% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7); }
+      50% { box-shadow: 0 0 15px 5px rgba(76, 175, 80, 0.4); }
+      100% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
+    }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-10px); }
+      40%, 80% { transform: translateX(10px); }
+    }
+    #word {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      user-select: none;
+    }
+    .tile {
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #ddd;
+      font-size: 1.5em;
+      font-weight: bold;
+      border-radius: 5px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      text-transform: uppercase;
+      border: none;
+      transition: background-color 0.3s ease;
+    }
+    .tile.correct {
+      background: #4caf50;
+      color: white;
+    }
+    .tile.hint {
+      background: #aaa;
+      color: white;
+    }
+    .keyboard {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-top: 1rem;
+    }
+    .keyrow {
+      display: flex;
+      justify-content: center;
+      margin: 5px 0;
+    }
+    .key {
+      width: 40px;
+      height: 40px;
+      margin: 2px;
+      border: none;
+      background: #ddd;
+      font-size: 1em;
+      cursor: pointer;
+      border-radius: 4px;
+      text-transform: uppercase;
+      transition: background-color 0.3s ease;
+      user-select: none;
+    }
+    .key.correct {
+      background: #4caf50;
+      color: white;
+      cursor: default;
+    }
+    .key.wrong {
+      background: #f44336;
+      color: white;
+      cursor: default;
+    }
+    .key.hintkey {
+      background: #aaa;
+      color: white;
+      cursor: default;
+    }
+    .key.disabled {
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+    #summary {
+      margin-top: 20px;
+      font-weight: bold;
+      white-space: pre-line;
+      min-height: 3.5em;
+      color: #333;
+      user-select: text;
+    }
+    #share {
+      margin-top: 10px;
+      cursor: pointer;
+      color: #007BFF;
+      text-decoration: underline;
+      user-select: none;
+    }
+    #helpButton {
+      margin-top: 20px;
+      padding: 10px 20px;
+      background: #007BFF;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 1em;
+      user-select: none;
+    }
+    #hintsIndicator {
+      margin: 10px auto 20px;
+      font-size: 1.8em;
+      user-select: none;
+      color: #444;
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+    }
+    .pedestrian {
+      transition: color 0.3s ease;
+      color: #4caf50; /* green by default */
+      user-select: none;
+    }
+    .pedestrian.used {
+      color: #f44336; /* red when hint used */
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+  <script src="encryptedWords.js"></script>
+</head>
+<body>
+  <h1>Reveal</h1>
+  <div id="modeIndicator"></div>
+  <div id="game">
+    <div id="wordWrapper"><div id="word"></div></div>
+    <div id="hintsIndicator"></div>
+    <div class="keyboard" id="keyboard"></div>
+    <div id="summary"></div>
+    <div id="share" onclick="shareResult()" role="button" tabindex="0" aria-label="Share your result">Share your result</div>
+    <button id="helpButton" onclick="location.href='help.html'">How to Play</button>
+  </div>
+  <script>
+    const testingMode = true;
+    const secondsPerPuzzle = testingMode ? 60 : 86400;
+    const now = new Date();
+    const anchorTime = testingMode
+      ? new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours(), 0, 0)
+      : new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const puzzleIndex = Math.floor((Date.now() - anchorTime.getTime()) / (secondsPerPuzzle * 1000));
+
+    document.getElementById("modeIndicator").textContent = testingMode
+      ? "🧪 Testing Mode (1-minute puzzles)"
+      : "🧩 Daily Puzzle Mode";
+
+    // Word list (encrypted and decrypted in encryptedWords.js)
+    // Assuming words[] and hintsOrder[] arrays available from encryptedWords.js
+
+    let word = ""; // decrypted current word
+    let hintsOrder = []; // order to reveal hints for current word
+
+    // Game state
+    let guessed = new Set();
+    let revealedHints = new Set();
+    let hintsUsed = 0;
+    let maxHints = 3;
+    let gameOver = false;
+    let stats = { correctLetters: 0, hintsUsed: 0, duration: 0, status: "" };
+    let startTime = Date.now();
+
+    const wordWrapper = document.getElementById("wordWrapper");
+    const wordDiv = document.getElementById("word");
+    const keyboardDiv = document.getElementById("keyboard");
+    const summaryDiv = document.getElementById("summary");
+    const hintsIndicator = document.getElementById("hintsIndicator");
+
+    // Keyboard layout QWERTY
+    const keyboardRows = [
+      "qwertyuiop",
+      "asdfghjkl",
+      "zxcvbnm"
+    ];
+
+    // --- Utility functions ---
+
+    function decryptWord(enc, idx) {
+      // uses CryptoJS.AES.decrypt with key "base64" + idx
+      const key = "base64" + idx;
+      try {
+        const bytes = CryptoJS.AES.decrypt(enc, key);
+        const decrypted = bytes.toString(CryptoJS.enc.Utf8);
+        return decrypted;
+      } catch {
+        return "";
+      }
+    }
+
+    function loadPuzzle() {
+      word = decryptWord(words[puzzleIndex % words.length], puzzleIndex % words.length).toLowerCase();
+      hintsOrder = hintsOrders[puzzleIndex % hintsOrders.length];
+    }
+
+    function renderWord() {
+      wordDiv.innerHTML = "";
+      for (let i = 0; i < word.length; i++) {
+        const letter = word[i];
+        const tile = document.createElement("div");
+        tile.classList.add("tile");
+        if (guessed.has(letter)) {
+          tile.classList.add("correct");
+          tile.textContent = letter;
+        } else if (revealedHints.has(i)) {
+          tile.classList.add("hint");
+          tile.textContent = letter;
+        } else {
+          tile.textContent = "";
+        }
+        wordDiv.appendChild(tile);
+      }
+    }
+
+    function renderKeyboard() {
+      keyboardDiv.innerHTML = "";
+      for (const row of keyboardRows) {
+        const rowDiv = document.createElement("div");
+        rowDiv.className = "keyrow";
+        for (const ch of row) {
+          const keyBtn = document.createElement("button");
+          keyBtn.textContent = ch.toUpperCase();
+          keyBtn.className = "key";
+          if (guessed.has(ch)) keyBtn.classList.add("correct");
+          else if (revealedHintsHasLetter(ch)) keyBtn.classList.add("hintkey");
+          else if (gameOver) keyBtn.classList.add("disabled");
+          keyBtn.disabled = gameOver || guessed.has(ch) || revealedHintsHasLetter(ch);
+          keyBtn.addEventListener("click", () => {
+            if (!gameOver) handleGuess(ch);
+          });
+          rowDiv.appendChild(keyBtn);
+        }
+        keyboardDiv.appendChild(rowDiv);
+      }
+    }
+
+    function revealedHintsHasLetter(ch) {
+      for (let i of revealedHints) {
+        if (word[i] === ch) return true;
+      }
+      return false;
+    }
+
+    function updateHintsIndicator() {
+      hintsIndicator.innerHTML = "";
+      for (let i = 0; i < maxHints; i++) {
+        const ped = document.createElement("span");
+        ped.className = "pedestrian";
+        ped.textContent = "🚶";
+        if (i < hintsUsed) ped.classList.add("used");
+        hintsIndicator.appendChild(ped);
+      }
+    }
+
+    function updateSummary() {
+      const dur = Math.floor((Date.now() - startTime) / 1000);
+      stats.duration = dur;
+      const statusText = stats.status === "fail" ? "Failed" : (stats.status === "solved" ? "Solved" : "In Progress");
+      summaryDiv.textContent =
+        `Puzzle #${puzzleIndex}\nStatus: ${statusText}\nCorrect Letters: ${stats.correctLetters}\nHints Used: ${stats.hintsUsed}\nDuration: ${dur}s`;
+    }
+
+    function disableAllKeys() {
+      document.querySelectorAll(".key").forEach(k => {
+        k.disabled = true;
+        k.classList.add("disabled");
+      });
+    }
+
+    // --- Main game logic ---
+
+    function handleGuess(letter) {
+      if (gameOver) return;
+      if (guessed.has(letter) || revealedHintsHasLetter(letter)) return;
+
+      if (word.includes(letter)) {
+        guessed.add(letter);
+        stats.correctLetters += countOccurrences(word, letter);
+      } else {
+        if (hintsUsed < maxHints) {
+          // Provide next hint letter(s)
+          revealNextHint();
+          hintsUsed++;
+          stats.hintsUsed = hintsUsed;
+          if (hintsUsed >= maxHints) {
+            // Next wrong guess = fail
+            if (gameOver) return;
+          }
+        } else {
+          // Max hints used and guessed wrong again = fail
+          gameOver = true;
+          stats.status = "fail";
+          showFail();
+          saveProgress();
+          renderWord();
+          renderKeyboard();
+          updateSummary();
+          disableAllKeys();
+          wordWrapper.classList.add("fail");
+          return;
+        }
+      }
+
+      // Check if solved
+      if (isSolved()) {
+        gameOver = true;
+        stats.status = "solved";
+        showSuccess();
+        saveProgress();
+        renderWord();
+        renderKeyboard();
+        updateSummary();
+        disableAllKeys();
+        wordWrapper.classList.add("complete");
+        return;
+      }
+
+      saveProgress();
+      renderWord();
+      renderKeyboard();
+      updateSummary();
+      updateHintsIndicator();
+    }
+
+    function countOccurrences(str, letter) {
+      return str.split("").filter(c => c === letter).length;
+    }
+
+    function revealNextHint() {
+      // Reveal next unrevealed index from hintsOrder
+      for (let idx of hintsOrder) {
+        if (!revealedHints.has(idx)) {
+          revealedHints.add(idx);
+          break;
+        }
+      }
+    }
+
+    function isSolved() {
+      for (let i = 0; i < word.length; i++) {
+        if (!guessed.has(word[i]) && !revealedHints.has(i)) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    function showSuccess() {
+      launchConfetti();
+    }
+
+    function showFail() {
+      // shake animation handled by CSS class on wordWrapper
+      // No confetti for fail
+    }
+
+    // Save progress to localStorage
+    const storageKey = "revealGame-" + puzzleIndex;
+    function saveProgress() {
+      const data = {
+        guessed: Array.from(guessed),
+        revealedHints: Array.from(revealedHints),
+        hintsUsed,
+        stats,
+        status: stats.status || ""
+      };
+      localStorage.setItem(storageKey, JSON.stringify(data));
+    }
+
+    // Load progress if exists
+    function loadProgress() {
+      const storedData = JSON.parse(localStorage.getItem(storageKey));
+      if (storedData && storedData.status) {
+        guessed = new Set(storedData.guessed);
+        revealedHints = new Set(storedData.revealedHints);
+        hintsUsed = storedData.hintsUsed || 0;
+        stats = storedData.stats || { correctLetters: 0, hintsUsed: 0, duration: 0, status: "" };
+        gameOver = storedData.status === "solved" || storedData.status === "fail";
+        if (gameOver) {
+          if (stats.status === "solved") wordWrapper.classList.add("complete");
+          if (stats.status === "fail") wordWrapper.classList.add("fail");
+          disableAllKeys();
+        }
+      }
+      updateHintsIndicator();
+    }
+
+    // Confetti launcher
+    function launchConfetti() {
+      if (window.confetti) {
+        const duration = 3000;
+        const animationEnd = Date.now() + duration;
+        const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 9999 };
+        (function frame() {
+          confetti(Object.assign({}, defaults, { particleCount: 5, origin: { x: Math.random(), y: Math.random() - 0.2 } }));
+          if (Date.now() < animationEnd) {
+            requestAnimationFrame(frame);
+          }
+        })();
+      }
+    }
+
+    // Share result
+    function shareResult() {
+      let baseUrl = location.origin + location.pathname;
+      let status = stats.status === "fail" ? "Failed" : (stats.status === "solved" ? "Solved" : "In Progress");
+      let msg = `Reveal Game - I ${status} the puzzle! Word: ${word.toUpperCase()}\nPlay here: ${baseUrl}`;
+      if (navigator.share) {
+        navigator.share({ title: "Reveal Game", text: msg, url: baseUrl });
+      } else {
+        prompt("Copy and share this link:", baseUrl);
+      }
+    }
+
+    // Init game
+    function init() {
+      loadPuzzle();
+      loadProgress();
+      renderWord();
+      renderKeyboard();
+      updateSummary();
+      updateHintsIndicator();
+    }
+
+    init();
+
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+</body>
+</html>
