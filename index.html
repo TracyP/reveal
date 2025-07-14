@@ -35,17 +35,8 @@
       text-transform: uppercase;
       border: none;
     }
-    .tile.correct {
-      background: #4caf50; color: white;
-    }
-    .tile.hint {
-      background: #aaa; color: white;
-      border: none;
-    }
-    .tile.flash {
-      background-color: #ffe082;
-      transition: background-color 0.8s ease-out;
-    }
+    .tile.correct { background: #4caf50; color: white; }
+    .tile.hint { background: #aaa; color: white; }
     .keyboard { display: flex; flex-direction: column; align-items: center; }
     .keyrow { display: flex; justify-content: center; margin: 5px 0; }
     .key {
@@ -75,8 +66,8 @@
   </div>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
   <script>
-    const epoch = new Date("2025-07-14T20:50:00"); // Local time start for testing
-    const secondsPerPuzzle = 60; // One puzzle per minute
+    const epoch = new Date("2025-07-14T21:05:00");
+    const secondsPerPuzzle = 60;
     const puzzleIndex = Math.floor((Date.now() - epoch.getTime()) / (secondsPerPuzzle * 1000));
 
     let wordIndex;
@@ -89,7 +80,96 @@
     const decrypted = CryptoJS.AES.decrypt(encryptedWords[wordIndex], "base64" + wordIndex);
     const word = decrypted.toString(CryptoJS.enc.Utf8).toUpperCase();
 
-    // The rest of the code remains unchanged from here...
+    const wordDisplay = document.getElementById("word");
+    const keyboardContainer = document.getElementById("keyboard");
+    const summary = document.getElementById("summary");
+    const guessed = new Set();
+    const revealed = Array(word.length).fill(false);
+    const revealedLetters = Array(word.length).fill(null);
+
+    function renderWord() {
+      wordDisplay.innerHTML = "";
+      for (let i = 0; i < word.length; i++) {
+        const tile = document.createElement("div");
+        tile.className = "tile";
+        if (revealed[i]) {
+          tile.classList.add(guessed.has(word[i]) ? "correct" : "hint");
+          tile.textContent = word[i];
+        } else {
+          tile.textContent = "";
+        }
+        wordDisplay.appendChild(tile);
+      }
+    }
+
+    const keyboardRows = ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"];
+    function renderKeyboard() {
+      keyboardContainer.innerHTML = "";
+      for (const row of keyboardRows) {
+        const rowDiv = document.createElement("div");
+        rowDiv.className = "keyrow";
+        for (const char of row) {
+          const btn = document.createElement("button");
+          btn.textContent = char;
+          btn.className = "key";
+          btn.id = `key-${char}`;
+          btn.onclick = () => guessLetter(char);
+          rowDiv.appendChild(btn);
+        }
+        keyboardContainer.appendChild(rowDiv);
+      }
+    }
+
+    function updateKeyboard(letter, result) {
+      const btn = document.getElementById(`key-${letter}`);
+      if (btn) btn.classList.add(result);
+    }
+
+    function guessLetter(letter) {
+      if (guessed.has(letter)) return;
+      guessed.add(letter);
+
+      let matched = false;
+      for (let i = 0; i < word.length; i++) {
+        if (word[i] === letter) {
+          revealed[i] = true;
+          matched = true;
+        }
+      }
+
+      updateKeyboard(letter, matched ? "correct" : "wrong");
+
+      if (!matched) {
+        for (let i = 0; i < word.length; i++) {
+          if (!revealed[i]) {
+            revealed[i] = true;
+            break;
+          }
+        }
+      }
+
+      renderWord();
+      checkComplete();
+    }
+
+    function checkComplete() {
+      if (revealed.every(val => val)) {
+        document.getElementById("wordWrapper").classList.add("complete");
+        summary.textContent = `✅ You revealed the word!`;
+        confetti();
+      }
+    }
+
+    function shareResult() {
+      const correct = [...guessed].filter(l => word.includes(l)).length;
+      const hints = revealed.filter((v, i) => v && !guessed.has(word[i])).length;
+      const text = `Reveal ${puzzleIndex}: ${correct} correct, ${hints} hint${hints !== 1 ? "s" : ""}`;
+      navigator.clipboard.writeText(text);
+      alert("Copied to clipboard:\n" + text);
+    }
+
+    renderWord();
+    renderKeyboard();
   </script>
 </body>
 </html>
