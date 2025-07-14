@@ -77,7 +77,7 @@
   </div>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
   <script>
-    const words = ["planet","dragon","customs","fossils","magenta","journey","kingdom"];
+    const words = ["planet","dragon","customs","fossils","magenta","journey","kingdom","reaction","building","computer","strategy","festival"];
     const epoch = new Date("2024-01-01T00:00:00Z");
     const dayIndex = Math.floor((Date.now() - epoch.getTime()) / 86400000);
     const word = words[dayIndex % words.length].toUpperCase();
@@ -143,14 +143,12 @@
       async function revealHint() {
         while (hintQueue.length > 0) {
           const ch = hintQueue.shift();
-          let revealed = false;
           let indexes = [];
           for (let j = 0; j < word.length; j++) {
             if (word[j] === ch && display[j].char === "_") {
               await new Promise(r => setTimeout(r, 300));
               display[j] = { char: ch.toLowerCase(), state: "hint" };
               hintCount++;
-              revealed = true;
               indexes.push(j);
               if (keyButtons[ch]) {
                 keyButtons[ch].classList.add("hintkey");
@@ -159,7 +157,7 @@
               updateDisplay(indexes);
             }
           }
-          if (revealed) break;
+          if (indexes.length > 0) break;
         }
       }
 
