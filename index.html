@@ -117,12 +117,14 @@
     const hintQueue = getHintOrder(word, dayIndex);
 
     const saved = localStorage.getItem(saveKey);
-    if (saved) {
-      const result = JSON.parse(saved);
-      summaryDiv.innerText = result.summary;
-      shareDiv.innerText = result.shareText;
-      wordDiv.innerHTML = result.finalDisplayHTML;
-      keyboardDiv.style.display = "none";
+if (saved) {
+  const result = JSON.parse(saved);
+  summaryDiv.innerText = result.summary;
+  shareDiv.innerText = result.shareText;
+  wordDiv.innerHTML = result.finalDisplayHTML;
+  // Remove any lingering .flash classes
+  wordDiv.querySelectorAll('.tile.flash').forEach(el => el.classList.remove('flash'));
+  keyboardDiv.style.display = "none";
     } else {
       function updateDisplay(highlightIndexes = []) {
         while (wordDiv.firstChild) wordDiv.removeChild(wordDiv.firstChild);
