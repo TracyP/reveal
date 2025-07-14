@@ -42,13 +42,9 @@
       background: #aaa; color: white;
       border: 2px solid #ffc107;
     }
-    .tile.flicker {
-      animation: flicker 0.5s ease-in-out 2;
-    }
-    @keyframes flicker {
-      0% { border-color: #ffc107; }
-      50% { border-color: #fff176; }
-      100% { border-color: #ffc107; }
+    .tile.flash {
+      background-color: #ffe082;
+      transition: background-color 0.8s ease-out;
     }
     .keyboard { display: flex; flex-direction: column; align-items: center; }
     .keyrow { display: flex; justify-content: center; margin: 5px 0; }
@@ -129,16 +125,21 @@
       keyboardDiv.style.display = "none";
     } else {
       function updateDisplay(highlightIndexes = []) {
-        // Fully clear old flickers and borders before rebuilding
         while (wordDiv.firstChild) wordDiv.removeChild(wordDiv.firstChild);
         for (let i = 0; i < display.length; i++) {
           const tile = display[i];
           const span = document.createElement("div");
           span.className = "tile" + (tile.state ? ` ${tile.state}` : "");
           span.textContent = tile.char;
-          if (highlightIndexes.includes(i)) span.classList.add("flicker");
           wordDiv.appendChild(span);
         }
+        highlightIndexes.forEach(i => {
+          const el = wordDiv.children[i];
+          if (el) {
+            el.classList.add("flash");
+            setTimeout(() => el.classList.remove("flash"), 800);
+          }
+        });
       }
 
       async function revealHint() {
@@ -165,9 +166,6 @@
       function guess(letter, btn) {
         if (guessed.has(letter)) return;
         guessed.add(letter);
-
-        // Remove old flickers
-        document.querySelectorAll(".tile.flicker").forEach(el => el.classList.remove("flicker"));
 
         let indexes = [];
         if (word.includes(letter)) {
