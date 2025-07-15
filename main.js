@@ -1,6 +1,6 @@
 // main.js
 
-const testingMode = false; // Set to true to rotate word every minute for testing
+const testingMode = true; // Set to true to rotate word every minute for testing
 const testingIntervalSeconds = 60;
 const hintsRequiredBeforeAllowed = 3;
 
@@ -13,6 +13,7 @@ let hintOrder = [];
 let hintsUsed = 0;
 let maxHints = 3;
 let gameComplete = false;
+let incorrectGuesses = 0;
 
 function getWordIndex() {
   const now = new Date();
@@ -79,13 +80,12 @@ function createKeyboard() {
   });
 }
 
-function disableKey(letter) {
+function disableKey(letter, correct) {
   const key = document.getElementById(`key-${letter.toUpperCase()}`);
   if (key) {
     key.disabled = true;
-    if (!key.classList.contains("correct")) {
-      key.classList.add("wrong");
-    }
+    key.classList.remove("wrong", "correct");
+    key.classList.add(correct ? "correct" : "wrong");
   }
 }
 
@@ -100,13 +100,15 @@ function handleGuess(letter) {
     }
   });
 
-  disableKey(letter);
+  if (found) {
+    disableKey(letter, true);
+  } else {
+    incorrectGuesses++;
+    disableKey(letter, false);
 
-  // Count total guesses based on disabled keys
-  const guessCount = document.querySelectorAll(".key.disabled").length;
-
-  if (!found && guessCount >= hintsRequiredBeforeAllowed) {
-    revealHint();
+    if (incorrectGuesses >= hintsRequiredBeforeAllowed) {
+      revealHint();
+    }
   }
 
   renderWord();
@@ -121,7 +123,7 @@ function revealHint() {
   const idx = hintOrder[hintsUsed];
   if (revealedLetters[idx]) return false;
   revealedLetters[idx] = "hint";
-  disableKey(currentWord[idx]);
+  disableKey(currentWord[idx], true);
   hintsUsed++;
   updateHintsLeft();
   renderWord();
@@ -197,6 +199,7 @@ function startGame() {
     revealedLetters = JSON.parse(localStorage.getItem("revealedLetters"));
     hintsUsed = parseInt(localStorage.getItem("hintsUsed")) || 0;
     gameComplete = localStorage.getItem("gameComplete") === "true";
+    incorrectGuesses = parseInt(localStorage.getItem("incorrectGuesses")) || 0;
     renderWord();
     updateHintsLeft();
     showStats();
@@ -208,11 +211,13 @@ function startGame() {
   revealedLetters = new Array(currentWord.length).fill("");
   hintOrder = shuffle([...Array(currentWord.length).keys()]);
   hintsUsed = 0;
+  incorrectGuesses = 0;
   gameComplete = false;
   localStorage.setItem("playedIndex", index);
   localStorage.setItem("revealedLetters", JSON.stringify(revealedLetters));
   localStorage.setItem("hintsUsed", "0");
   localStorage.setItem("gameComplete", "false");
+  localStorage.setItem("incorrectGuesses", "0");
 
   createKeyboard();
   renderWord();
