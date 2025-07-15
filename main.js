@@ -82,6 +82,7 @@ function createKeyboard() {
 }
 
 function disableKey(letter, correct) {
+  if (!letter) return; // guard against undefined
   const key = document.getElementById(`key-${letter.toUpperCase()}`);
   if (key) {
     key.disabled = true;
@@ -142,7 +143,10 @@ function revealHint() {
     }
   }
 
-  if (idx === null) return false; // No valid hint to reveal
+  if (idx === null || currentWord[idx] === undefined) {
+    console.warn("No valid unrevealed letter found for hint.");
+    return false;
+  }
 
   revealedLetters[idx] = "hint";
   disableKey(currentWord[idx], true);
@@ -151,12 +155,11 @@ function revealHint() {
   renderWord();
 
   if (hintsUsed === maxHints) {
-    // Final hint used, any future incorrect guess ends the game
+    // Final hint used; next incorrect guess will end game
   }
 
   return true;
 }
-
 
 function updateHintsLeft() {
   const el = document.getElementById("hintsLeft");
