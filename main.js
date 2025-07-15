@@ -137,12 +137,12 @@ function revealHint() {
   }
 
   console.log(`[hint] Attempting to reveal hint. Current hintsUsed: ${hintsUsed}`);
-  console.log(`[hint] Hint order: ${hintOrder}`);
-  console.log(`[hint] Revealed letters: ${revealedLetters}`);
+  console.log(`[hint] Hint order:`, hintOrder);
+  console.log(`[hint] Revealed letters:`, revealedLetters);
 
-  // Loop through hintOrder starting from current hintsUsed
-  while (hintsUsed < maxHints && hintOrder.length > 0) {
-    const idx = hintOrder[hintsUsed];
+  // Look for next unrevealed letter from hintOrder
+  for (let i = 0; i < hintOrder.length; i++) {
+    const idx = hintOrder[i];
     const letter = currentWord[idx];
     const revealedStatus = revealedLetters[idx];
 
@@ -158,7 +158,7 @@ function revealHint() {
       return true;
     } else {
       console.log(`[hint] Letter at index ${idx} already revealed — skipping`);
-      hintsUsed++; // Still advance to next hint slot
+      // Do not increment hintsUsed here!
     }
   }
 
