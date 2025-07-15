@@ -227,6 +227,7 @@ function shareResult() {
 }
 
 function startGame() {
+  console.log("[debug] New hint order:", hintOrder);
   document.getElementById("modeIndicator").textContent = testingMode ? "(Testing Mode)" : "";
   const index = getWordIndex();
   currentWord = decryptWord(index);
@@ -247,7 +248,9 @@ function startGame() {
   }
 
   revealedLetters = new Array(currentWord.length).fill("");
+  revealedLetters = JSON.parse(localStorage.getItem("revealedLetters"));
   hintOrder = shuffle([...Array(currentWord.length).keys()]);
+  localStorage.setItem("hintOrder", JSON.stringify(hintOrder));
   hintsUsed = 0;
   incorrectGuesses = 0;
   totalGuesses = 0;
