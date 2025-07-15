@@ -1,6 +1,6 @@
 // main.js
 
-const testingMode = true; // Set to true to rotate word every minute for testing
+const testingMode = false; // Set to true to rotate word every minute for testing
 const testingIntervalSeconds = 60;
 const hintsRequiredBeforeAllowed = 3;
 
@@ -62,6 +62,7 @@ function renderWord() {
 
 function createKeyboard() {
   const keyboard = document.getElementById("keyboard");
+  keyboard.innerHTML = "";
   const layout = ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"];
   layout.forEach(row => {
     const rowDiv = document.createElement("div");
@@ -82,26 +83,34 @@ function disableKey(letter) {
   const key = document.getElementById(`key-${letter.toUpperCase()}`);
   if (key) {
     key.disabled = true;
-    key.classList.add("hintkey");
+    if (!key.classList.contains("correct")) {
+      key.classList.add("wrong");
+    }
   }
 }
 
 function handleGuess(letter) {
-  // if (gameComplete || revealedLetters.includes("")) return;
   if (gameComplete) return;
-  const guessCount = revealedLetters.filter(x => x === "guess").length;
+
   let found = false;
   currentWord.split("").forEach((char, i) => {
     if (char.toUpperCase() === letter.toUpperCase() && !revealedLetters[i]) {
       revealedLetters[i] = "guess";
-      disableKey(letter);
       found = true;
     }
   });
+
+  disableKey(letter);
+
+  // Count total guesses based on disabled keys
+  const guessCount = document.querySelectorAll(".key.disabled").length;
+
   if (!found && guessCount >= hintsRequiredBeforeAllowed) {
     revealHint();
   }
+
   renderWord();
+
   if (revealedLetters.every(x => x)) {
     showWordComplete(true);
   }
@@ -192,6 +201,7 @@ function startGame() {
     updateHintsLeft();
     showStats();
     if (gameComplete) disableAllKeys();
+    createKeyboard();
     return;
   }
 
