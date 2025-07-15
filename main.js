@@ -132,8 +132,17 @@ function handleGuess(letter) {
 function revealHint() {
   if (hintsUsed >= maxHints) return false;
 
-  const idx = hintOrder[hintsUsed];
-  if (revealedLetters[idx]) return false;
+  // Find the next unrevealed letter in the hint order
+  let idx = null;
+  for (let i = 0; i < hintOrder.length; i++) {
+    const potential = hintOrder[i];
+    if (!revealedLetters[potential]) {
+      idx = potential;
+      break;
+    }
+  }
+
+  if (idx === null) return false; // No valid hint to reveal
 
   revealedLetters[idx] = "hint";
   disableKey(currentWord[idx], true);
@@ -142,11 +151,12 @@ function revealHint() {
   renderWord();
 
   if (hintsUsed === maxHints) {
-    // Do nothing extra yet; next wrong guess ends it
+    // Final hint used, any future incorrect guess ends the game
   }
 
   return true;
 }
+
 
 function updateHintsLeft() {
   const el = document.getElementById("hintsLeft");
