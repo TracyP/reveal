@@ -1,6 +1,6 @@
 // main.js
 
-const testingMode = true; // Set to true to rotate word every minute for testing
+const testingMode = true;
 const testingIntervalSeconds = 60;
 const hintsRequiredBeforeAllowed = 3;
 
@@ -14,6 +14,7 @@ let hintsUsed = 0;
 let maxHints = 3;
 let gameComplete = false;
 let incorrectGuesses = 0;
+let totalGuesses = 0;
 
 function getWordIndex() {
   const now = new Date();
@@ -92,6 +93,11 @@ function disableKey(letter, correct) {
 function handleGuess(letter) {
   if (gameComplete) return;
 
+  const key = document.getElementById(`key-${letter.toUpperCase()}`);
+  if (key.disabled) return;
+
+  totalGuesses++;
+
   let found = false;
   currentWord.split("").forEach((char, i) => {
     if (char.toUpperCase() === letter.toUpperCase() && !revealedLetters[i]) {
@@ -106,8 +112,13 @@ function handleGuess(letter) {
     incorrectGuesses++;
     disableKey(letter, false);
 
-    if (incorrectGuesses >= hintsRequiredBeforeAllowed) {
-      revealHint();
+    if (hintsUsed >= maxHints) {
+      showWordComplete(false); // Too many mistakes
+      return;
+    }
+
+    if (totalGuesses >= hintsRequiredBeforeAllowed) {
+      revealHint(); // Only allow hinting after 3 total guesses
     }
   }
 
@@ -120,16 +131,20 @@ function handleGuess(letter) {
 
 function revealHint() {
   if (hintsUsed >= maxHints) return false;
+
   const idx = hintOrder[hintsUsed];
   if (revealedLetters[idx]) return false;
+
   revealedLetters[idx] = "hint";
   disableKey(currentWord[idx], true);
   hintsUsed++;
   updateHintsLeft();
   renderWord();
+
   if (hintsUsed === maxHints) {
-    setTimeout(() => showWordComplete(false), 500);
+    // Do nothing extra yet; next wrong guess ends it
   }
+
   return true;
 }
 
@@ -139,7 +154,11 @@ function updateHintsLeft() {
   for (let i = 0; i < maxHints; i++) {
     const led = document.createElement("div");
     led.className = "hint-led";
-    if (i < hintsUsed) led.classList.add("used");
+    if (i < hintsUsed) {
+      led.classList.add("used"); // red
+    } else {
+      led.classList.add("active"); // green
+    }
     el.appendChild(led);
   }
 }
@@ -200,6 +219,7 @@ function startGame() {
     hintsUsed = parseInt(localStorage.getItem("hintsUsed")) || 0;
     gameComplete = localStorage.getItem("gameComplete") === "true";
     incorrectGuesses = parseInt(localStorage.getItem("incorrectGuesses")) || 0;
+    totalGuesses = parseInt(localStorage.getItem("totalGuesses")) || 0;
     renderWord();
     updateHintsLeft();
     showStats();
@@ -212,12 +232,14 @@ function startGame() {
   hintOrder = shuffle([...Array(currentWord.length).keys()]);
   hintsUsed = 0;
   incorrectGuesses = 0;
+  totalGuesses = 0;
   gameComplete = false;
   localStorage.setItem("playedIndex", index);
   localStorage.setItem("revealedLetters", JSON.stringify(revealedLetters));
   localStorage.setItem("hintsUsed", "0");
   localStorage.setItem("gameComplete", "false");
   localStorage.setItem("incorrectGuesses", "0");
+  localStorage.setItem("totalGuesses", "0");
 
   createKeyboard();
   renderWord();
