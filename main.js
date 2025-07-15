@@ -131,28 +131,38 @@ function handleGuess(letter) {
 }
 
 function revealHint() {
-  if (hintsUsed >= maxHints) return false;
+  if (hintsUsed >= maxHints) {
+    console.log(`[hint] Max hints used (${hintsUsed}/${maxHints}). No hint given.`);
+    return false;
+  }
+
+  console.log(`[hint] Attempting to reveal hint. Current hintsUsed: ${hintsUsed}`);
+  console.log(`[hint] Hint order: ${hintOrder}`);
+  console.log(`[hint] Revealed letters: ${revealedLetters}`);
 
   // Loop through hintOrder starting from current hintsUsed
   while (hintsUsed < maxHints && hintOrder.length > 0) {
     const idx = hintOrder[hintsUsed];
+    const letter = currentWord[idx];
+    const revealedStatus = revealedLetters[idx];
 
-    if (!revealedLetters[idx]) {
-      // Valid unrevealed letter found — reveal it
+    console.log(`[hint] Checking index ${idx} (letter '${letter}') — revealed status: ${revealedStatus}`);
+
+    if (!revealedStatus) {
+      console.log(`[hint] Revealing hint at index ${idx} with letter '${letter}'`);
       revealedLetters[idx] = "hint";
-      disableKey(currentWord[idx], true);
+      disableKey(letter, true);
       hintsUsed++;
       updateHintsLeft();
       renderWord();
       return true;
     } else {
-      // Skip this one — already revealed by user
-      hintsUsed++;
+      console.log(`[hint] Letter at index ${idx} already revealed — skipping`);
+      hintsUsed++; // Still advance to next hint slot
     }
   }
 
-  // If we get here, we ran out of useful hint positions
-  console.warn("No valid unrevealed letter found for hint.");
+  console.warn("[hint] No valid unrevealed letter found for hint. All hint positions exhausted.");
   return false;
 }
 
