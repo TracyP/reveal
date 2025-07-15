@@ -228,46 +228,75 @@ function shareResult() {
 
 function startGame() {
   document.getElementById("modeIndicator").textContent = testingMode ? "(Testing Mode)" : "";
+
   const index = getWordIndex();
   currentWord = decryptWord(index);
 
-  const storedIndex = parseInt(localStorage.getItem("playedIndex"));
-  if (storedIndex === index) {
-    revealedLetters = JSON.parse(localStorage.getItem("revealedLetters") || "[]");
-    if (!Array.isArray(revealedLetters) || revealedLetters.length !== currentWord.length) {
-      revealedLetters = new Array(currentWord.length).fill("");
-    }
-    hintsUsed = parseInt(localStorage.getItem("hintsUsed")) || 0;
-    gameComplete = localStorage.getItem("gameComplete") === "true";
-    incorrectGuesses = parseInt(localStorage.getItem("incorrectGuesses")) || 0;
-    totalGuesses = parseInt(localStorage.getItem("totalGuesses")) || 0;
-    renderWord();
-    updateHintsLeft();
-    showStats();
-    if (gameComplete) disableAllKeys();
-    createKeyboard();
+  // Sanity check
+  if (!currentWord || typeof currentWord !== "string" || currentWord.length === 0) {
+    console.error("[startGame] Failed to decrypt current word.");
     return;
   }
 
+  const storedIndex = parseInt(localStorage.getItem("playedIndex"));
+  const storedRevealed = localStorage.getItem("revealedLetters");
+  const storedHintsUsed = parseInt(localStorage.getItem("hintsUsed")) || 0;
+  const storedComplete = localStorage.getItem("gameComplete") === "true";
+  const storedHintOrder = JSON.parse(localStorage.getItem("hintOrder") || "[]");
+  const storedIncorrect = parseInt(localStorage.getItem("incorrectGuesses")) || 0;
+  const storedTotal = parseInt(localStorage.getItem("totalGuesses")) || 0;
+
+  // Restore only if playing same word and state looks valid
+  if (storedIndex === index && Array.isArray(JSON.parse(storedRevealed || "[]"))) {
+    revealedLetters = JSON.parse(storedRevealed);
+    if (revealedLetters.length !== currentWord.length) {
+      console.warn("[startGame] Stored revealedLetters wrong length. Resetting.");
+      revealedLetters = new Array(currentWord.length).fill("");
+    }
+
+    hintOrder = Array.isArray(storedHintOrder) && storedHintOrder.length === currentWord.length
+      ? storedHintOrder
+      : shuffle([...Array(currentWord.length).keys()]);
+    hintsUsed = storedHintsUsed;
+    incorrectGuesses = storedIncorrect;
+    totalGuesses = storedTotal;
+    gameComplete = storedComplete;
+
+    console.log("[debug] Restored game state.");
+    console.log("[debug] hintOrder:", hintOrder);
+    console.log("[debug] revealedLetters:", revealedLetters);
+
+    renderWord();
+    updateHintsLeft();
+    createKeyboard();
+    showStats();
+    if (gameComplete) disableAllKeys();
+    return;
+  }
+
+  // Otherwise start fresh
+  currentWord = decryptWord(index);
   revealedLetters = new Array(currentWord.length).fill("");
-  revealedLetters = JSON.parse(localStorage.getItem("revealedLetters"));
   hintOrder = shuffle([...Array(currentWord.length).keys()]);
-  console.log("[debug] New hint order:", hintOrder);
-  localStorage.setItem("hintOrder", JSON.stringify(hintOrder));
   hintsUsed = 0;
   incorrectGuesses = 0;
   totalGuesses = 0;
   gameComplete = false;
+
   localStorage.setItem("playedIndex", index);
   localStorage.setItem("revealedLetters", JSON.stringify(revealedLetters));
+  localStorage.setItem("hintOrder", JSON.stringify(hintOrder));
   localStorage.setItem("hintsUsed", "0");
   localStorage.setItem("gameComplete", "false");
   localStorage.setItem("incorrectGuesses", "0");
   localStorage.setItem("totalGuesses", "0");
 
+  console.log("[debug] New hint order:", hintOrder);
+
   createKeyboard();
   renderWord();
   updateHintsLeft();
 }
+
 
 window.onload = startGame;
