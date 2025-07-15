@@ -233,7 +233,10 @@ function startGame() {
 
   const storedIndex = parseInt(localStorage.getItem("playedIndex"));
   if (storedIndex === index) {
-    revealedLetters = JSON.parse(localStorage.getItem("revealedLetters"));
+    revealedLetters = JSON.parse(localStorage.getItem("revealedLetters") || "[]");
+    if (!Array.isArray(revealedLetters) || revealedLetters.length !== currentWord.length) {
+      revealedLetters = new Array(currentWord.length).fill("");
+    }
     hintsUsed = parseInt(localStorage.getItem("hintsUsed")) || 0;
     gameComplete = localStorage.getItem("gameComplete") === "true";
     incorrectGuesses = parseInt(localStorage.getItem("incorrectGuesses")) || 0;
