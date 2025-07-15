@@ -133,32 +133,27 @@ function handleGuess(letter) {
 function revealHint() {
   if (hintsUsed >= maxHints) return false;
 
-  // Find the next unrevealed letter in the hint order
-  let idx = null;
-  for (let i = 0; i < hintOrder.length; i++) {
-    const potential = hintOrder[i];
-    if (!revealedLetters[potential]) {
-      idx = potential;
-      break;
+  // Loop through hintOrder starting from current hintsUsed
+  while (hintsUsed < maxHints && hintOrder.length > 0) {
+    const idx = hintOrder[hintsUsed];
+
+    if (!revealedLetters[idx]) {
+      // Valid unrevealed letter found — reveal it
+      revealedLetters[idx] = "hint";
+      disableKey(currentWord[idx], true);
+      hintsUsed++;
+      updateHintsLeft();
+      renderWord();
+      return true;
+    } else {
+      // Skip this one — already revealed by user
+      hintsUsed++;
     }
   }
 
-  if (idx === null || currentWord[idx] === undefined) {
-    console.warn("No valid unrevealed letter found for hint.");
-    return false;
-  }
-
-  revealedLetters[idx] = "hint";
-  disableKey(currentWord[idx], true);
-  hintsUsed++;
-  updateHintsLeft();
-  renderWord();
-
-  if (hintsUsed === maxHints) {
-    // Final hint used; next incorrect guess will end game
-  }
-
-  return true;
+  // If we get here, we ran out of useful hint positions
+  console.warn("No valid unrevealed letter found for hint.");
+  return false;
 }
 
 function updateHintsLeft() {
