@@ -96,14 +96,18 @@
     margin-right: auto;
   }
   .hint-led {
-    width: 16px;
-    height: 16px;
+    width: 12px;
+    height: 12px;
     border-radius: 50%;
-    background: #4caf50; /* green */
-    transition: background-color 0.3s ease;
+    margin: 0 4px;
+    background-color: #ccc;
+    display: inline-block;
+  }
+  .hint-led.active {
+    background-color: green;
   }
   .hint-led.used {
-    background: #f44336; /* red */
+    background-color: red;
   }
 </style>
 </head>
