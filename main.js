@@ -47,19 +47,59 @@ function shuffle(array) {
 }
 
 function renderWord() {
-  const wordEl = document.getElementById("word");
-  wordEl.innerHTML = "";
-  currentWord.split("").forEach((char, i) => {
-    const div = document.createElement("div");
-    div.className = "tile";
-    if (revealedLetters[i] === "guess") {
-      div.classList.add("correct");
-    } else if (revealedLetters[i] === "hint") {
-      div.classList.add("hint");
+  const wordContainer = document.getElementById("word-container");
+  wordContainer.innerHTML = ""; // Clear existing word
+  const word = currentWord.word.toLowerCase();
+  const definition = currentWord.definition;
+
+  revealedLetters.forEach((status, idx) => {
+    const letter = word[idx];
+    const tile = document.createElement("div");
+    tile.classList.add("tile");
+
+    if (status === "correct") {
+      tile.classList.add("correct-flash"); // Flash first
+      setTimeout(() => {
+        tile.classList.remove("correct-flash");
+        tile.classList.add("correct");
+      }, 400);
+      tile.textContent = letter.toUpperCase();
+    } else if (status === "hint") {
+      tile.classList.add("hint-flash"); // Flash first
+      setTimeout(() => {
+        tile.classList.remove("hint-flash");
+        tile.classList.add("hint");
+      }, 400);
+      tile.textContent = letter.toUpperCase();
+    } else {
+      tile.textContent = "";
     }
-    div.textContent = revealedLetters[i] ? char.toUpperCase() : "";
-    wordEl.appendChild(div);
+
+    wordContainer.appendChild(tile);
   });
+
+  // Border for success/failure
+  if (gameState === "won") {
+    wordContainer.classList.remove("fail-border");
+    wordContainer.classList.add("success-border");
+  } else if (gameState === "lost") {
+    wordContainer.classList.remove("success-border");
+    wordContainer.classList.add("fail-border");
+  } else {
+    wordContainer.classList.remove("success-border", "fail-border");
+  }
+
+  // Definition display
+  const defElement = document.getElementById("definition");
+  if (definition) {
+    const trimmed = definition.trim();
+    const lastChar = trimmed.slice(-1);
+    const punctuation = [".", "!", "?", "…"];
+    const suffix = punctuation.includes(lastChar) ? "" : ".";
+    defElement.textContent = trimmed + suffix;
+  } else {
+    defElement.textContent = "";
+  }
 }
 
 function createKeyboard() {
