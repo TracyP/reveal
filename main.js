@@ -81,13 +81,17 @@ function createKeyboard() {
   });
 }
 
-function disableKey(letter, correct) {
-  if (!letter) return; // guard against undefined
+function disableKey(letter, correct, isHint = false) {
+  if (!letter) return;
   const key = document.getElementById(`key-${letter.toUpperCase()}`);
   if (key) {
     key.disabled = true;
-    key.classList.remove("wrong", "correct");
-    key.classList.add(correct ? "correct" : "wrong");
+    key.classList.remove("wrong", "correct", "hint");
+    if (isHint) {
+      key.classList.add("hint");
+    } else {
+      key.classList.add(correct ? "correct" : "wrong");
+    }
   }
 }
 
@@ -150,7 +154,7 @@ function revealHint() {
     if (!revealedStatus) {
       console.log(`[hint] Revealing hint at index ${idx} with letter '${letter}'`);
       revealedLetters[idx] = "hint";
-      disableKey(letter, true);
+      disableKey(letter, true, true); // hint key
       hintsUsed++;
       updateHintsLeft();
       renderWord();
@@ -168,18 +172,24 @@ function revealHint() {
 }
 
 function updateHintsLeft() {
-  const el = document.getElementById("hintsLeft");
-  el.innerHTML = "";
+  const container = document.getElementById("hintsLeft");
+  container.innerHTML = "";
+
+  const pill = document.createElement("div");
+  pill.id = "hintsLeftContainer";
+
+  const label = document.createElement("span");
+  label.textContent = "Hints";
+  pill.appendChild(label);
+
   for (let i = 0; i < maxHints; i++) {
     const led = document.createElement("div");
     led.className = "hint-led";
-    if (i < hintsUsed) {
-      led.classList.add("used"); // red
-    } else {
-      led.classList.add("active"); // green
-    }
-    el.appendChild(led);
+    if (i < hintsUsed) led.classList.add("used");
+    pill.appendChild(led);
   }
+
+  container.appendChild(pill);
 }
 
 function showWordComplete(success) {
@@ -187,8 +197,12 @@ function showWordComplete(success) {
   const summary = document.getElementById("summary");
   const wordWrapper = document.getElementById("wordWrapper");
   wordWrapper.classList.add("complete");
+  wordWrapper.classList.remove("success", "failure");
+  wordWrapper.classList.add(success ? "success" : "failure");
+
   const msg = success ? "Solved!" : `Fail\nWord was: ${currentWord.toUpperCase()}`;
   summary.textContent = msg;
+
   updateStats(success);
   disableAllKeys();
   fetchDefinition(currentWord);
