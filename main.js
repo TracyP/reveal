@@ -233,20 +233,38 @@ function updateHintsLeft() {
 }
 
 function showWordComplete(success) {
+  // Mark the game as complete so that no further input is processed
   gameComplete = true;
+
+  // Get the UI elements for displaying the word and the result message
   const summary = document.getElementById("summary");
   const wordWrapper = document.getElementById("wordWrapper");
+
+  // Always add the "complete" class to trigger end-of-game styles
   wordWrapper.classList.add("complete");
+
+  // Remove any previous outcome class in case of a reset/retry
   wordWrapper.classList.remove("success", "failure");
+
+  // Add the appropriate outcome class: "success" or "failure"
   wordWrapper.classList.add(success ? "success" : "failure");
 
-  const msg = success ? "Solved!" : `Fail\nWord was: ${currentWord.toUpperCase()}`;
+  // Show success/failure message in the summary box
+  const msg = success
+    ? "Solved!"
+    : `Fail\nWord was: ${currentWord.toUpperCase()}`;
   summary.textContent = msg;
 
+  // Update win/loss statistics
   updateStats(success);
+
+  // Prevent further typing or clicking keys
   disableAllKeys();
+
+  // Fetch and display word definition if available
   fetchDefinition(currentWord);
 }
+
 
 function disableAllKeys() {
   document.querySelectorAll(".key").forEach(btn => btn.disabled = true);
