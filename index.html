@@ -44,17 +44,6 @@
     gap: 10px;
   }
 
-/* WORD TILE FLASH */
-@keyframes tile-flash {
-  0%, 100% { transform: scale(1); }
-  25%, 75% { transform: scale(1.2); }
-  50% { transform: scale(1); }
-}
-
-.tile.flash {
-  animation: tile-flash 0.4s ease 2;
-}
-
 /* TILE COLORS */
 
 .tile.correct {
@@ -165,6 +154,21 @@
     margin-left: auto;
     margin-right: auto;
   }
+
+@keyframes flash-twice {
+  0%, 100% { opacity: 1; }
+  25%, 75% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
+
+.correct-flash {
+  animation: flash-twice 0.4s ease-in-out;
+}
+
+.hint-flash {
+  animation: flash-twice 0.4s ease-in-out;
+}
+
 </style>
 </head>
 <body>
