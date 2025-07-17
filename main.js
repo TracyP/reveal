@@ -101,7 +101,10 @@ function renderWord() {
 
   // Definition display
 const defElement = document.getElementById("definition");
+console.debug("[definition] commencing definition analysis");
+
 if (definition) {
+  console.debug("[definition] entered definition analysis");
   const original = definition;
   const trimmed = definition.trim();
   const lastChar = trimmed.slice(-1);
