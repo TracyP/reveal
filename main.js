@@ -68,39 +68,47 @@ function renderWord() {
     previousRevealedLetters = Array(word.length).fill(null);
   }
 
-  revealedLetters.forEach((status, idx) => {
-    const letter = word[idx];
-    const tile = document.createElement("div");
-    tile.classList.add("tile");
+revealedLetters.forEach((status, idx) => {
+  const letter = word[idx];
+  const tile = document.createElement("div");
+  tile.classList.add("tile");
 
-    const prevStatus = previousRevealedLetters[idx];
+  const prevStatus = previousRevealedLetters[idx];
 
-    if (status === "correct") {
-      // #1: Reset any previous animation class
+  if (status === "correct") {
+    tile.textContent = letter.toUpperCase();
+
+    if (prevStatus !== "correct") {
       tile.classList.remove("correct", "correct-flash");
-    
       tile.classList.add("correct-flash");
       setTimeout(() => {
         tile.classList.remove("correct-flash");
         tile.classList.add("correct");
       }, 400);
-      tile.textContent = letter.toUpperCase();
-    } else if (status === "hint") {
-      // #1: Reset any previous animation class
+    } else {
+      tile.classList.add("correct");
+    }
+
+  } else if (status === "hint") {
+    tile.textContent = letter.toUpperCase();
+
+    if (prevStatus !== "hint") {
       tile.classList.remove("hint", "hint-flash");
-    
       tile.classList.add("hint-flash");
       setTimeout(() => {
         tile.classList.remove("hint-flash");
         tile.classList.add("hint");
       }, 400);
-      tile.textContent = letter.toUpperCase();
     } else {
-      tile.textContent = "";
+      tile.classList.add("hint");
     }
 
-    wordContainer.appendChild(tile);
-  });
+  } else {
+    tile.textContent = "";
+  }
+
+  wordContainer.appendChild(tile);
+});
 
   // Set game state border
   if (gameState === "won") {
