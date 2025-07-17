@@ -100,16 +100,23 @@ function renderWord() {
   }
 
   // Definition display
-  const defElement = document.getElementById("definition");
-  if (definition) {
-    const trimmed = definition.trim();
-    const punctuation = [".", "!", "?", "…", ":", ";"];
-    const lastChar = trimmed.slice(-1);
-    const needsPeriod = !punctuation.includes(lastChar);
-    defElement.textContent = trimmed + (needsPeriod ? "." : "");
-  } else {
-    defElement.textContent = "";
-  }
+const defElement = document.getElementById("definition");
+if (definition) {
+  const original = definition;
+  const trimmed = definition.trim();
+  const lastChar = trimmed.slice(-1);
+  const punctuation = [".", "!", "?", "…", ":", ";"];
+  const needsPeriod = !punctuation.includes(lastChar);
+
+  console.debug("[definition] Original:", original);
+  console.debug("[definition] Trimmed:", trimmed);
+  console.debug("[definition] Last character:", lastChar);
+  console.debug("[definition] Needs period:", needsPeriod);
+
+  defElement.textContent = trimmed + (needsPeriod ? "." : "");
+} else {
+  console.debug("[definition] No definition provided.");
+  defElement.textContent = "";
 }
 
 function createKeyboard() {
