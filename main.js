@@ -76,29 +76,25 @@ function renderWord() {
     const prevStatus = previousRevealedLetters[idx];
 
     if (status === "correct") {
-      if (prevStatus !== "correct") {
-        tile.classList.add("correct-flash");
-        setTimeout(() => {
-          tile.classList.remove("correct-flash");
-          tile.classList.add("correct");
-        }, 400);
-      } else {
+      // #1: Reset any previous animation class
+      tile.classList.remove("correct", "correct-flash");
+    
+      tile.classList.add("correct-flash");
+      setTimeout(() => {
+        tile.classList.remove("correct-flash");
         tile.classList.add("correct");
-      }
+      }, 400);
       tile.textContent = letter.toUpperCase();
-
     } else if (status === "hint") {
-      if (prevStatus !== "hint") {
-        tile.classList.add("hint-flash");
-        setTimeout(() => {
-          tile.classList.remove("hint-flash");
-          tile.classList.add("hint");
-        }, 400);
-      } else {
+      // #1: Reset any previous animation class
+      tile.classList.remove("hint", "hint-flash");
+    
+      tile.classList.add("hint-flash");
+      setTimeout(() => {
+        tile.classList.remove("hint-flash");
         tile.classList.add("hint");
-      }
+      }, 400);
       tile.textContent = letter.toUpperCase();
-
     } else {
       tile.textContent = "";
     }
