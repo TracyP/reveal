@@ -7,7 +7,7 @@ const hintsRequiredBeforeAllowed = 3;
 const encryptedWords = window.encryptedWords;
 const passphraseBase = "base64";
 
-let currentWord = "";
+let currentWord = { word: "", definition: "" };
 let revealedLetters = [];
 let hintOrder = [];
 let hintsUsed = 0;
@@ -35,7 +35,16 @@ function decryptWord(index) {
   const encrypted = encryptedWords[index];
   const passphrase = passphraseBase + index;
   const bytes = CryptoJS.AES.decrypt(encrypted, passphrase);
-  return bytes.toString(CryptoJS.enc.Utf8);
+  const decryptedStr = bytes.toString(CryptoJS.enc.Utf8);
+
+  try {
+    return JSON.parse(decryptedStr);
+  } catch (e) {
+    return {
+      word: decryptedStr,
+      definition: ""
+    };
+  }
 }
 
 function shuffle(array) {
@@ -144,7 +153,7 @@ function handleGuess(letter) {
   totalGuesses++;
 
   let found = false;
-  currentWord.split("").forEach((char, i) => {
+  currentWord.word.split("").forEach((char, i) => {
     if (char.toUpperCase() === letter.toUpperCase() && !revealedLetters[i]) {
       revealedLetters[i] = "guess";
       found = true;
@@ -186,7 +195,7 @@ function revealHint() {
 
   for (let i = 0; i < hintOrder.length; i++) {
     const idx = hintOrder[i];
-    const letter = currentWord[idx];
+    const letter = currentWord.word[idx];
     const revealedStatus = revealedLetters[idx];
 
     console.log(`[hint] Checking index ${idx} (letter '${letter}') — revealed status: ${revealedStatus}`);
@@ -233,38 +242,24 @@ function updateHintsLeft() {
 }
 
 function showWordComplete(success) {
-  // Mark the game as complete so that no further input is processed
   gameComplete = true;
 
-  // Get the UI elements for displaying the word and the result message
   const summary = document.getElementById("summary");
   const wordWrapper = document.getElementById("wordWrapper");
 
-  // Always add the "complete" class to trigger end-of-game styles
   wordWrapper.classList.add("complete");
-
-  // Remove any previous outcome class in case of a reset/retry
   wordWrapper.classList.remove("success", "failure");
-
-  // Add the appropriate outcome class: "success" or "failure"
   wordWrapper.classList.add(success ? "success" : "failure");
 
-  // Show success/failure message in the summary box
   const msg = success
     ? "Solved!"
-    : `Fail\nWord was: ${currentWord.toUpperCase()}`;
+    : `Fail\nWord was: ${currentWord.word.toUpperCase()}`;
   summary.textContent = msg;
 
-  // Update win/loss statistics
   updateStats(success);
-
-  // Prevent further typing or clicking keys
   disableAllKeys();
-
-  // Fetch and display word definition if available
-  fetchDefinition(currentWord);
+  fetchDefinition(currentWord.word);
 }
-
 
 function disableAllKeys() {
   document.querySelectorAll(".key").forEach(btn => btn.disabled = true);
@@ -305,9 +300,8 @@ function startGame() {
   const index = getWordIndex();
   currentWord = decryptWord(index);
 
-  // Sanity check
-  if (!currentWord || typeof currentWord !== "string" || currentWord.length === 0) {
-    console.error("[startGame] Failed to decrypt current word.");
+  if (!currentWord || typeof currentWord !== "object" || !currentWord.word || currentWord.word.length === 0) {
+    console.error("[startGame] Failed to decrypt current word object.");
     return;
   }
 
@@ -319,17 +313,16 @@ function startGame() {
   const storedIncorrect = parseInt(localStorage.getItem("incorrectGuesses")) || 0;
   const storedTotal = parseInt(localStorage.getItem("totalGuesses")) || 0;
 
-  // Restore only if playing same word and state looks valid
   if (storedIndex === index && Array.isArray(JSON.parse(storedRevealed || "[]"))) {
     revealedLetters = JSON.parse(storedRevealed);
-    if (revealedLetters.length !== currentWord.length) {
+    if (revealedLetters.length !== currentWord.word.length) {
       console.warn("[startGame] Stored revealedLetters wrong length. Resetting.");
-      revealedLetters = new Array(currentWord.length).fill("");
+      revealedLetters = new Array(currentWord.word.length).fill("");
     }
 
-    hintOrder = Array.isArray(storedHintOrder) && storedHintOrder.length === currentWord.length
+    hintOrder = Array.isArray(storedHintOrder) && storedHintOrder.length === currentWord.word.length
       ? storedHintOrder
-      : shuffle([...Array(currentWord.length).keys()]);
+      : shuffle([...Array(currentWord.word.length).keys()]);
     hintsUsed = storedHintsUsed;
     incorrectGuesses = storedIncorrect;
     totalGuesses = storedTotal;
@@ -347,10 +340,9 @@ function startGame() {
     return;
   }
 
-  // Otherwise start fresh
   currentWord = decryptWord(index);
-  revealedLetters = new Array(currentWord.length).fill("");
-  hintOrder = shuffle([...Array(currentWord.length).keys()]);
+  revealedLetters = new Array(currentWord.word.length).fill("");
+  hintOrder = shuffle([...Array(currentWord.word.length).keys()]);
   hintsUsed = 0;
   incorrectGuesses = 0;
   totalGuesses = 0;
@@ -370,6 +362,5 @@ function startGame() {
   renderWord();
   updateHintsLeft();
 }
-
 
 window.onload = startGame;
