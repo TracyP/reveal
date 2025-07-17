@@ -92,7 +92,6 @@ function renderWord() {
         tile.classList.add("hint");
       }
       tile.textContent = letter.toUpperCase();
-    }
     } else {
       tile.textContent = "";
     }
