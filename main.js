@@ -103,10 +103,10 @@ function renderWord() {
   const defElement = document.getElementById("definition");
   if (definition) {
     const trimmed = definition.trim();
+    const punctuation = [".", "!", "?", "…", ":", ";"];
     const lastChar = trimmed.slice(-1);
-    const punctuation = [".", "!", "?", "…"];
-    const suffix = punctuation.includes(lastChar) ? "" : ".";
-    defElement.textContent = trimmed + suffix;
+    const needsPeriod = !punctuation.includes(lastChar);
+    defElement.textContent = trimmed + (needsPeriod ? "." : "");
   } else {
     defElement.textContent = "";
   }
@@ -294,6 +294,16 @@ function shareResult() {
   navigator.clipboard.writeText(`Reveal\n${summary}\nhttps://yourgameurl.com`).then(() => {
     alert("Result copied to clipboard!");
   });
+}
+
+function endsWithPunctuation(text) {
+  // Common punctuation marks to check for at the end
+  const punctuationMarks = [".", "!", "?", "…", ":", ";"];
+  // Trim whitespace from end
+  const trimmed = text.trim();
+  if (trimmed.length === 0) return false;
+  const lastChar = trimmed.charAt(trimmed.length - 1);
+  return punctuationMarks.includes(lastChar);
 }
 
 function startGame() {
