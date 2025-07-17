@@ -68,47 +68,50 @@ function renderWord() {
     previousRevealedLetters = Array(word.length).fill(null);
   }
 
-revealedLetters.forEach((status, idx) => {
-  const letter = word[idx];
-  const tile = document.createElement("div");
-  tile.classList.add("tile");
+  revealedLetters.forEach((status, idx) => {
+    const letter = word[idx];
+    const tile = document.createElement("div");
+    tile.classList.add("tile");
 
-  const prevStatus = previousRevealedLetters[idx];
+    const prevStatus = previousRevealedLetters[idx];
 
-  if (status === "correct") {
-    tile.textContent = letter.toUpperCase();
+    if (status === "correct") {
+      tile.textContent = letter.toUpperCase();
 
-    if (prevStatus !== "correct") {
-      tile.classList.remove("correct", "correct-flash");
-      tile.classList.add("correct-flash");
-      setTimeout(() => {
-        tile.classList.remove("correct-flash");
+      if (prevStatus !== "correct") {
+        tile.classList.remove("correct", "correct-flash");
+        tile.classList.add("correct-flash");
+        setTimeout(() => {
+          tile.classList.remove("correct-flash");
+          tile.classList.add("correct");
+        }, 400);
+      } else {
         tile.classList.add("correct");
-      }, 400);
-    } else {
-      tile.classList.add("correct");
-    }
+      }
 
-  } else if (status === "hint") {
-    tile.textContent = letter.toUpperCase();
+      wordContainer.appendChild(tile);
 
-    if (prevStatus !== "hint") {
-      tile.classList.remove("hint", "hint-flash");
-      tile.classList.add("hint-flash");
-      setTimeout(() => {
-        tile.classList.remove("hint-flash");
-        tile.classList.add("hint");
-      }, 400);
-    } else {
+    } else if (status === "hint") {
+      tile.textContent = letter.toUpperCase();
       tile.classList.add("hint");
+      wordContainer.appendChild(tile); // Append first for animation to work
+
+      if (prevStatus !== "hint") {
+        // Use requestAnimationFrame to allow initial paint before adding flash class
+        requestAnimationFrame(() => {
+          tile.classList.add("hint-flash");
+          setTimeout(() => {
+            tile.classList.remove("hint-flash");
+            tile.classList.add("hint");
+          }, 400);
+        });
+      }
+
+    } else {
+      tile.textContent = "";
+      wordContainer.appendChild(tile);
     }
-
-  } else {
-    tile.textContent = "";
-  }
-
-  wordContainer.appendChild(tile);
-});
+  });
 
   // Set game state border
   if (gameState === "won") {
@@ -124,6 +127,7 @@ revealedLetters.forEach((status, idx) => {
   displayDefinition(currentWord.word, definition);
   previousRevealedLetters = [...revealedLetters];
 }
+
 
 
 function displayDefinition(word, definition) {
