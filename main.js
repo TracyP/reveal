@@ -281,11 +281,12 @@ function fetchDefinition(word) {
   fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`)
     .then(res => res.json())
     .then(data => {
-      const definition = data[0]?.meanings[0]?.definitions[0]?.definition || "(no definition found)";
-      document.getElementById("definition").textContent = `${word.charAt(0).toUpperCase() + word.slice(1)}: ${definition}.`;
+      const rawDefinition = data[0]?.meanings[0]?.definitions[0]?.definition || "(no definition found)";
+      
+      // Store separately so display logic can use it
+      displayDefinition(word, rawDefinition);
     });
 }
-
 function updateStats(success) {
   const stats = JSON.parse(localStorage.getItem("revealStats") || "{\"played\":0,\"solved\":0}");
   stats.played++;
