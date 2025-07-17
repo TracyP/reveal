@@ -15,7 +15,7 @@ let maxHints = 3;
 let gameComplete = false;
 let incorrectGuesses = 0;
 let totalGuesses = 0;
-let gameState = "playing"; // can be "playing", "won", or "lost";
+let gameState = "playing";
 
 function getWordIndex() {
   const now = new Date();
@@ -58,7 +58,7 @@ function shuffle(array) {
 
 function renderWord() {
   const wordContainer = document.getElementById("word");
-  wordContainer.innerHTML = ""; // Clear existing word
+  wordContainer.innerHTML = "";
   const word = currentWord.word.toLowerCase();
   const definition = currentWord.definition;
 
@@ -68,14 +68,14 @@ function renderWord() {
     tile.classList.add("tile");
 
     if (status === "correct") {
-      tile.classList.add("correct-flash"); // Flash first
+      tile.classList.add("correct-flash");
       setTimeout(() => {
         tile.classList.remove("correct-flash");
         tile.classList.add("correct");
       }, 400);
       tile.textContent = letter.toUpperCase();
     } else if (status === "hint") {
-      tile.classList.add("hint-flash"); // Flash first
+      tile.classList.add("hint-flash");
       setTimeout(() => {
         tile.classList.remove("hint-flash");
         tile.classList.add("hint");
@@ -88,7 +88,6 @@ function renderWord() {
     wordContainer.appendChild(tile);
   });
 
-  // Border for success/failure
   if (gameState === "won") {
     wordContainer.classList.remove("fail-border");
     wordContainer.classList.add("success-border");
@@ -99,29 +98,33 @@ function renderWord() {
     wordContainer.classList.remove("success-border", "fail-border");
   }
 
-  // Definition display
-const defElement = document.getElementById("definition");
-console.debug("[definition] commencing definition analysis");
+  displayDefinition(currentWord.word, definition);
+}
 
-if (definition) {
-  console.debug("[definition] entered definition analysis");
-  const original = definition;
+function displayDefinition(word, definition) {
+  const defElement = document.getElementById("definition");
+  console.debug("[definition] commencing displayDefinition");
+
+  if (!definition) {
+    console.debug("[definition] No definition provided.");
+    defElement.textContent = "";
+    return;
+  }
+
   const trimmed = definition.trim();
   const lastChar = trimmed.slice(-1);
   const punctuation = [".", "!", "?", "…", ":", ";"];
   const needsPeriod = !punctuation.includes(lastChar);
 
-  console.debug("[definition] Original:", original);
-  console.debug("[definition] Trimmed:", trimmed);
-  console.debug("[definition] Last character:", lastChar);
-  console.debug("[definition] Needs period:", needsPeriod);
+  const finalText = `${word.charAt(0).toUpperCase() + word.slice(1)}: ${trimmed}${needsPeriod ? "." : ""}`;
+  console.debug("[definition] Final display text:", finalText);
 
-  defElement.textContent = trimmed + (needsPeriod ? "." : "");
-} else {
-  console.debug("[definition] No definition provided.");
-  defElement.textContent = "";
+  defElement.textContent = finalText;
 }
-}
+
+
+
+
 function createKeyboard() {
   const keyboard = document.getElementById("keyboard");
   keyboard.innerHTML = "";
