@@ -56,7 +56,7 @@ function shuffle(array) {
 }
 
 function renderWord() {
-  const wordContainer = document.getElementById("word-container");
+  const wordContainer = document.getElementById("word");
   wordContainer.innerHTML = ""; // Clear existing word
   const word = currentWord.word.toLowerCase();
   const definition = currentWord.definition;
