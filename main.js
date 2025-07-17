@@ -156,7 +156,7 @@ function handleGuess(letter) {
   let found = false;
   currentWord.word.split("").forEach((char, i) => {
     if (char.toUpperCase() === letter.toUpperCase() && !revealedLetters[i]) {
-      revealedLetters[i] = "guess";
+      revealedLetters[i] = "correct";
       found = true;
     }
   });
