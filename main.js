@@ -15,6 +15,7 @@ let maxHints = 3;
 let gameComplete = false;
 let incorrectGuesses = 0;
 let totalGuesses = 0;
+let gameState = "playing"; // can be "playing", "won", or "lost";
 
 function getWordIndex() {
   const now = new Date();
@@ -243,6 +244,7 @@ function updateHintsLeft() {
 
 function showWordComplete(success) {
   gameComplete = true;
+  gameState = success ? "won" : "lost";
 
   const summary = document.getElementById("summary");
   const wordWrapper = document.getElementById("wordWrapper");
