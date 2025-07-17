@@ -103,7 +103,6 @@ function renderWord() {
 
 function displayDefinition(word, definition) {
   const defElement = document.getElementById("definition");
-  console.debug("[definition] commencing displayDefinition");
 
   if (!definition) {
     console.debug("[definition] No definition provided.");
