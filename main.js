@@ -16,6 +16,7 @@ let gameComplete = false;
 let incorrectGuesses = 0;
 let totalGuesses = 0;
 let gameState = "playing";
+let previousRevealedLetters = [];
 
 function getWordIndex() {
   const now = new Date();
@@ -67,20 +68,31 @@ function renderWord() {
     const tile = document.createElement("div");
     tile.classList.add("tile");
 
+    const prevStatus = previousRevealedLetters[idx];
+
     if (status === "correct") {
-      tile.classList.add("correct-flash");
-      setTimeout(() => {
-        tile.classList.remove("correct-flash");
+      if (prevStatus !== "correct") {
+        tile.classList.add("correct-flash");
+        setTimeout(() => {
+          tile.classList.remove("correct-flash");
+          tile.classList.add("correct");
+        }, 400);
+      } else {
         tile.classList.add("correct");
-      }, 400);
+      }
       tile.textContent = letter.toUpperCase();
     } else if (status === "hint") {
-      tile.classList.add("hint-flash");
-      setTimeout(() => {
-        tile.classList.remove("hint-flash");
+      if (prevStatus !== "hint") {
+        tile.classList.add("hint-flash");
+        setTimeout(() => {
+          tile.classList.remove("hint-flash");
+          tile.classList.add("hint");
+        }, 400);
+      } else {
         tile.classList.add("hint");
-      }, 400);
+      }
       tile.textContent = letter.toUpperCase();
+    }
     } else {
       tile.textContent = "";
     }
@@ -99,6 +111,8 @@ function renderWord() {
   }
 
   displayDefinition(currentWord.word, definition);
+  previousRevealedLetters = [...revealedLetters];
+
 }
 
 function displayDefinition(word, definition) {
