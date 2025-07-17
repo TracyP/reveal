@@ -63,6 +63,11 @@ function renderWord() {
   const word = currentWord.word.toLowerCase();
   const definition = currentWord.definition;
 
+  // Make sure previousRevealedLetters is defined and has the right length
+  if (!Array.isArray(previousRevealedLetters) || previousRevealedLetters.length !== word.length) {
+    previousRevealedLetters = Array(word.length).fill(null);
+  }
+
   revealedLetters.forEach((status, idx) => {
     const letter = word[idx];
     const tile = document.createElement("div");
@@ -81,6 +86,7 @@ function renderWord() {
         tile.classList.add("correct");
       }
       tile.textContent = letter.toUpperCase();
+
     } else if (status === "hint") {
       if (prevStatus !== "hint") {
         tile.classList.add("hint-flash");
@@ -92,6 +98,7 @@ function renderWord() {
         tile.classList.add("hint");
       }
       tile.textContent = letter.toUpperCase();
+
     } else {
       tile.textContent = "";
     }
@@ -99,6 +106,7 @@ function renderWord() {
     wordContainer.appendChild(tile);
   });
 
+  // Set game state border
   if (gameState === "won") {
     wordContainer.classList.remove("fail-border");
     wordContainer.classList.add("success-border");
@@ -111,8 +119,8 @@ function renderWord() {
 
   displayDefinition(currentWord.word, definition);
   previousRevealedLetters = [...revealedLetters];
-
 }
+
 
 function displayDefinition(word, definition) {
   const defElement = document.getElementById("definition");
