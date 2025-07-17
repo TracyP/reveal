@@ -118,7 +118,7 @@ if (definition) {
   console.debug("[definition] No definition provided.");
   defElement.textContent = "";
 }
-
+}
 function createKeyboard() {
   const keyboard = document.getElementById("keyboard");
   keyboard.innerHTML = "";
